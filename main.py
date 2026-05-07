@@ -3,8 +3,13 @@ import sys
 import os
 
 from map import GameMap
-from troops import Tower
+from troops import Tower, MainTower, SecTower, Pekka
 
+
+BASE_DIR = os.path.dirname(__file__)
+
+path_blau = os.path.join(BASE_DIR, "assets", "türme", "turm_blau_1.png")
+path_rot = os.path.join(BASE_DIR, "assets", "türme", "turm_rot_1.png")
 pygame.init()
 
 WIDTH, HEIGHT = 640, 673
@@ -13,7 +18,6 @@ pygame.display.set_caption("Clash Mini System")
 
 clock = pygame.time.Clock()
 
-BASE_DIR = os.path.dirname(__file__)
 
 # ----------------------------
 # MAP
@@ -25,24 +29,19 @@ game_map = GameMap(
 
 
 
-# ----------------------------
-# 🏰 TÜRME (BLUE)
-# ----------------------------
+
 blue_towers = [
-    Tower((180, 450), os.path.join(BASE_DIR, "assets", "türme", "turm_blau_1.png"), "blue"),
-    Tower((295, 490), os.path.join(BASE_DIR, "assets", "türme", "turm_blau_1.png"), "blue"),
-    Tower((410, 450), os.path.join(BASE_DIR, "assets", "türme", "turm_blau_1.png"), "blue")
+    SecTower(180, 450, 0, path_blau),
+    SecTower(410, 450, 0, path_blau),
+    MainTower(0, path_blau)
 ]
-
-# ----------------------------
-# 🔴 TÜRME (RED)
-# ----------------------------
 red_towers = [
-    Tower((180, 140), os.path.join(BASE_DIR, "assets", "türme", "turm_rot_1.png"), "red"),
-    Tower((295, 100), os.path.join(BASE_DIR, "assets", "türme", "turm_rot_1.png"), "red"),
-    Tower((410, 140), os.path.join(BASE_DIR, "assets", "türme", "turm_rot_1.png"), "red")
+    SecTower(180, 140, 1, path_rot),
+    SecTower(410, 140, 1, path_rot),
+    MainTower(1, path_rot)
 ]
 
+troops=[]
 # ----------------------------
 # GAME LOOP
 # ----------------------------
@@ -55,6 +54,14 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if game_map.is_allowed(event.pos):
+                x,y=event.pos
+                #print(x,y)
+                P1=Pekka(x,y,1)
+                troops.append(P1)
+                print(troops)
+
     # ----------------------------
     # DRAW
     # ----------------------------
@@ -65,6 +72,9 @@ while running:
 
     for t in red_towers:
         t.draw(screen)
+    
+    for t in troops:
+        t.draw_circle(screen)
 
 
 

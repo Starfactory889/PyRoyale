@@ -28,4 +28,5 @@ class GameMap:
     def is_allowed(self, pos):
         if any(r.collidepoint(pos) for r in self.blocked_areas):
             return False
-        return any(r.collidepoint(pos) for r in self.allowed_areas)
+        if any(r.collidepoint(pos) for r in self.allowed_areas):
+            return True
