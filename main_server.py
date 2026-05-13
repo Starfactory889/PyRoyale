@@ -1,4 +1,4 @@
-#import server
+import server
 import troops as t
 import time
 

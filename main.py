@@ -3,7 +3,7 @@ import sys
 import os
 
 from map import GameMap
-from troops import Tower, MainTower, SecTower, Pekka
+from troops import Tower, MainTower, SecTower, Pekka, Ritter, HogRider
 
 
 BASE_DIR = os.path.dirname(__file__)
@@ -27,9 +27,6 @@ game_map = GameMap(
     (WIDTH, HEIGHT)
 )
 
-
-
-
 blue_towers = [
     SecTower(180, 450, 0, path_blau),
     SecTower(410, 450, 0, path_blau),
@@ -42,6 +39,10 @@ red_towers = [
 ]
 
 troops=[]
+ritter_p2  = Ritter(x=200, y=200, owner=2)
+pekka_p2   = Pekka(x=250, y=200, owner=2)
+hog_p2     = HogRider(x=370, y=200, owner=2)
+enemys = [hog_p2,pekka_p2,ritter_p2]
 # ----------------------------
 # GAME LOOP
 # ----------------------------
@@ -49,6 +50,10 @@ running = True
 
 while running:
     clock.tick(60)
+
+
+    # Ziele jeden Frame neu berechnen
+    # ... draw ...
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -64,6 +69,21 @@ while running:
 
                 troops.append(P1)
                 print(troops)
+    
+    
+    
+    red_targets  = red_towers + enemys
+    blue_targets = blue_towers + troops
+
+    for troop in troops:
+        troop.next_Step(red_targets)
+
+    for enemy in enemys:
+        enemy.next_Step(blue_targets)
+
+    # Tote entfernen
+    troops = [t for t in troops if t.hp > 0]
+    enemys = [e for e in enemys if e.hp > 0]
 
     # ----------------------------
     # DRAW
@@ -79,6 +99,9 @@ while running:
     for t in troops:
         t.update()
         t.draw(screen)
+        
+    for t in enemys:
+        t.draw_circle(screen)
 
 
 
