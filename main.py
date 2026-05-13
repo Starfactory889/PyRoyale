@@ -58,7 +58,10 @@ while running:
             if game_map.is_allowed(event.pos):
                 x,y=event.pos
                 #print(x,y)
-                P1=Pekka(x,y,1)
+                P1 = Pekka(x, y, 1, BASE_DIR)
+
+                #P1.set_target()
+
                 troops.append(P1)
                 print(troops)
 
@@ -74,7 +77,8 @@ while running:
         t.draw(screen)
     
     for t in troops:
-        t.draw_circle(screen)
+        t.update()
+        t.draw(screen)
 
 
 
