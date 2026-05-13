@@ -21,14 +21,42 @@ class Unit:
         self.elexir = elexir
         self.owner = owner
 
-    def move(self):
-        pass
+    def distance(self, goal:object):
+        dx = (goal.x - self.x)
+        dy = (goal.y - self.y)
+        d = math.sqrt(dx**2+dy**2)
+        return d,(dx,dy)
 
-    def attack(self):
-        pass
+    def next_objekt(self,enemys:list):
+        min_d = float("inf")
+        for enemy in enemys:
+            d,_ = self.distance(enemy)
+            if d < min_d:
+                min_d = d
+                next_enemy = enemy 
+        return next_enemy,d
+    
+    def next_Step(self,enemys:list):
+        enemy,d = self.next_objekt(enemys)
+        if d < self.range:
+            self.attack(enemy)
+        
+        else:
+            d,(dx,dy) = self.distance(enemy)
+            x,y = self.move(d,dx,dy)
+            return x,y
+            
+            
+            
+    def move(self,d,dx,dy):
+        self.x = round(self.x + (dx / d) * self.speed,2)
+        self.y = round(self.y + (dy / d) * self.speed,2)
+        return self.x,self.y
+            
 
-    def update(self):
-        self.move()
+    def attack(self,enemy:object):
+        enemy.hp = enemy.hp -self.damage
+            
 
     def take_damage(self, amount):
         self.hp -= amount
