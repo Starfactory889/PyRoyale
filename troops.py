@@ -1,4 +1,6 @@
 import pygame
+import os
+from entity_animation import AnimatedEntity
 
 # =========================
 # BASE UNIT
@@ -43,13 +45,31 @@ class Unit:
 # TROOPS
 # =========================
 class Pekka(Unit):
-    def __init__(self, x, y, owner):
-        super().__init__(x, y, 1000, 200, 0.5, 50, 6, owner)
 
-    def draw_circle(self,screen):
-        pygame.draw.circle(screen, (255,0,0),(self.x,self.y),5)
-        #print(self.x,self.y)
-        return screen
+    def __init__(self, x, y, owner, base_path):
+
+        super().__init__(x, y, 1000, 200, 2.5, 50, 6, owner)
+
+        self.animation = AnimatedEntity(
+            folder_name="drachen",
+            base_path=os.path.join(base_path, "assets"),
+
+            walk_prefix="drachen_m",
+            spawn_prefix="drachen_s",
+
+            pos=(x, y),
+
+            size=(40, 40),
+
+            walk_frames=12,
+            spawn_frames=5
+        )
+
+    def update(self):
+        self.animation.update()
+
+    def draw(self, screen):
+        self.animation.draw(screen)
         
 
 class HogRider(Unit):
