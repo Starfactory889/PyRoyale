@@ -1,4 +1,5 @@
 import pygame
+import math
 
 # =========================
 # BASE UNIT
@@ -29,12 +30,13 @@ class Unit:
 
     def next_objekt(self,enemys:list):
         min_d = float("inf")
+        enemy = None
         for enemy in enemys:
             d,_ = self.distance(enemy)
-            if d < min_d:
+            if d < min_d and d != 0:
                 min_d = d
-                next_enemy = enemy 
-        return next_enemy,d
+                next_enemy = enemy
+        return next_enemy,min_d
     
     def next_Step(self,enemys:list):
         enemy,d = self.next_objekt(enemys)
@@ -65,6 +67,10 @@ class Unit:
 
     def die(self):
         print(f"Unit {self.id} gestorben")
+        
+    def draw_circle(self, screen):
+        pygame.draw.circle(screen, (255, 0, 0), (int(self.x), int(self.y)), 5)
+        return screen
 
 
 # =========================
@@ -72,22 +78,17 @@ class Unit:
 # =========================
 class Pekka(Unit):
     def __init__(self, x, y, owner):
-        super().__init__(x, y, 1000, 200, 0.5, 50, 6, owner)
-
-    def draw_circle(self,screen):
-        pygame.draw.circle(screen, (255,0,0),(self.x,self.y),5)
-        #print(self.x,self.y)
-        return screen
+        super().__init__(x, y, 1000, 200, 0.5, 2, 6, owner)
         
 
 class HogRider(Unit):
     def __init__(self, x, y, owner):
-        super().__init__(x, y, 500, 100, 1, 40, 3, owner)
+        super().__init__(x, y, 500, 100, 1, 3, 3, owner)
 
 
 class Ritter(Unit):
     def __init__(self, x, y, owner):
-        super().__init__(x, y, 600, 120, 0.8, 50, 4, owner)
+        super().__init__(x, y, 600, 120, 0.8, 2, 4, owner)
 
 
 # =========================

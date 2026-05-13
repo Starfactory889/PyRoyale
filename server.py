@@ -1,16 +1,31 @@
 #server
-import socket
-import threading
-import json
-import time
+import socket, threading,json,time
+import troops as t
+
+path_blau = "./assets/türme/turm_blau_1.png"
+path_rot  = "./assets/türme/turm_rot_1.png"
+
+#Start zustand
+blue_towers = [
+    t.SecTower(180, 450, 0, path_blau),
+    t.SecTower(410, 450, 0, path_blau),
+    t.MainTower(0, path_blau)
+]
+red_towers = [
+    t.SecTower(180, 140, 1, path_rot),
+    t.SecTower(410, 140, 1, path_rot),
+    t.MainTower(1, path_rot)
+]
 
 def empfangen(komm, addr):
-    """Läuft in eigenem Thread – empfängt Koordinaten vom Client"""
+    """Läuft in eigenem Thread  empfängt Koordinaten vom Client"""
     while True:
         data = komm.recv(1024)
         if not data:
             break
         print(f"Koordinaten von {addr}: {data.decode()}")
+        
+        
 
 def senden(komm):
     """Läuft in eigenem Thread – sendet alle 2ms den Spielzustand"""
