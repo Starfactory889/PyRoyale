@@ -32,8 +32,11 @@ class Unit:
 
     def next_objekt(self,enemys:list):
         min_d = float("inf")
-        enemy = None
+        next_enemy = None
         for enemy in enemys:
+            if enemy.hp <= 0:
+                continue
+            
             d,_ = self.distance(enemy)
             if d < min_d and d != 0:
                 min_d = d
@@ -42,7 +45,10 @@ class Unit:
     
     def next_Step(self,enemys:list):
         enemy,d = self.next_objekt(enemys)
-        if d < self.range:
+        if enemy is None:
+            return
+    
+        elif d < self.range:
             self.attack(enemy)
         
         else:
@@ -59,13 +65,13 @@ class Unit:
             
 
     def attack(self,enemy:object):
-        enemy.hp = enemy.hp -self.damage
+        if enemy.hp <= 0:
+            return  
+        enemy.hp -= self.damage
+        if enemy.hp <=0:
+            enemy.hp = 0
+            enemy.die()
             
-
-    def take_damage(self, amount):
-        self.hp -= amount
-        if self.hp <= 0:
-            self.die()
 
     def die(self):
         print(f"Unit {self.id} gestorben")
@@ -99,7 +105,18 @@ class Pekka(Unit):
             spawn_frames=5
         )
 
-    def update(self):
+    def update(self,enemy):
+    # Winkel aus Bewegungsrichtung berechnen
+        if enemy is not None:
+            # Richtung zum Feind berechnen
+            dx = enemy.x - self.x
+            dy = enemy.y - self.y
+            winkel = math.degrees(math.atan2(-dy, dx))-90
+            self.animation.winkel = winkel
+            
+        print(f"winkel: {winkel}, animation.winkel: {self.animation.winkel}")
+        self.animation.x = int(self.x)
+        self.animation.y = int(self.y)
         self.animation.update()
 
     def draw(self, screen):

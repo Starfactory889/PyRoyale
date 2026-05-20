@@ -60,6 +60,7 @@ class AnimatedEntity:
         self.anim_speed = 0.18
 
         self.playing_spawn = True
+        self.winkel = 0  # ← hier hinzufügen
 
     # ---------------------------------
     # Update
@@ -88,9 +89,6 @@ class AnimatedEntity:
     def draw(self, screen):
 
         frame = self.frames[int(self.index)]
-
-        rect = frame.get_rect(
-            center=(self.x, self.y)
-        )
-
-        screen.blit(frame, rect)
+        rotiert = pygame.transform.rotate(frame, self.winkel)  # ← rotieren
+        rect = rotiert.get_rect(center=(self.x, self.y))   
+        screen.blit(rotiert, rect)

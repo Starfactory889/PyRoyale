@@ -10,6 +10,7 @@ BASE_DIR = os.path.dirname(__file__)
 
 path_blau = os.path.join(BASE_DIR, "assets", "türme", "turm_blau_1.png")
 path_rot = os.path.join(BASE_DIR, "assets", "türme", "turm_rot_1.png")
+base_bath = os.path.join(BASE_DIR)
 pygame.init()
 
 WIDTH, HEIGHT = 640, 673
@@ -38,9 +39,12 @@ red_towers = [
     MainTower(1, path_rot)
 ]
 
+towers = red_towers + blue_towers
+
+
 troops=[]
 ritter_p2  = Ritter(x=200, y=200, owner=2)
-pekka_p2   = Pekka(x=250, y=200, owner=2)
+pekka_p2   = Pekka(x=250, y=200, owner=2,base_path=base_bath)
 hog_p2     = HogRider(x=370, y=200, owner=2)
 enemys = [hog_p2,pekka_p2,ritter_p2]
 # ----------------------------
@@ -49,7 +53,7 @@ enemys = [hog_p2,pekka_p2,ritter_p2]
 running = True
 
 while running:
-    clock.tick(60)
+    clock.tick(30)
 
 
     # Ziele jeden Frame neu berechnen
@@ -74,15 +78,14 @@ while running:
     
     red_targets  = red_towers + enemys
     blue_targets = blue_towers + troops
-
     for troop in troops:
-        troop.next_Step(red_targets)
-
+        troop.next_Step(red_targets)  # ← fehlt noch!
     for enemy in enemys:
         enemy.next_Step(blue_targets)
 
     # Tote entfernen
     troops = [t for t in troops if t.hp > 0]
+    towers = [t for t in towers if t.hp > 0]
     enemys = [e for e in enemys if e.hp > 0]
 
     # ----------------------------
@@ -90,20 +93,16 @@ while running:
     # ----------------------------
     game_map.draw(screen)
 
-    for t in blue_towers:
-        t.draw(screen)
-
-    for t in red_towers:
+    for t in towers:
         t.draw(screen)
     
-    for t in troops:
-        t.update()
-        t.draw(screen)
+    for troop in troops:
+        ziel, _ = troop.next_objekt(red_targets)
+        troop.update(ziel)
+        troop.draw(screen)
         
     for t in enemys:
         t.draw_circle(screen)
-
-
 
     game_map.draw_debug(screen)
 
