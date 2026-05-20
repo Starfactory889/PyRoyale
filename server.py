@@ -1,110 +1,111 @@
-import socket, threading, json, time
-import troops as t
-
-# Spielzustand
-state_lock = threading.Lock()
-troops_p1 = []   # Spieler 1 (Blau)
-troops_p2 = []   # Spieler 2 (Rot)
-
-path_blau = "./assets/türme/turm_blau_1.png"
-path_rot  = "./assets/türme/turm_rot_1.png"
-
-blue_towers = [t.SecTower(180, 450, 0, path_blau),
-               t.SecTower(410, 450, 0, path_blau),
-               t.MainTower(0, path_blau)]
-red_towers  = [t.SecTower(180, 140, 1, path_rot),
-               t.SecTower(410, 140, 1, path_rot),
-               t.MainTower(1, path_rot)]
-
-KLASSEN = {"Pekka": t.Pekka, "Ritter": t.Ritter, "HogRider": t.HogRider}
-
-def serialize(units):
-    return [{"id": u.id, "type": u.__class__.__name__,
-             "x": u.x, "y": u.y, "hp": u.hp, "max_hp": u.max_hp, "owner": u.owner}
-            for u in units]
-
-def get_state():
-    with state_lock:
-        return json.dumps({
-            "troops_p1":   serialize(troops_p1),
-            "troops_p2":   serialize(troops_p2),
-            "blue_towers": serialize(blue_towers),
-            "red_towers":  serialize(red_towers),
-        }) + "\n"
-
-def game_loop():
-    global troops_p1, troops_p2
-    while True:
-        with state_lock:
-            red_targets  = [t for t in red_towers  if t.hp > 0] + troops_p2
-            blue_targets = [t for t in blue_towers if t.hp > 0] + troops_p1
-
-            for troop in troops_p1:
-                troop.next_Step(red_targets)
-            for troop in troops_p2:
-                troop.next_Step(blue_targets)
-
-            troops_p1 = [t for t in troops_p1 if t.hp > 0]
-            troops_p2 = [t for t in troops_p2 if t.hp > 0]
-
-        time.sleep(1/60)
-
-def handle_client(komm, player_id):
-    print(f"Spieler {player_id} verbunden")
-
-    def empfangen():
-        puffer = ""
-        while True:
-            try:
-                data = komm.recv(1024).decode()
-                if not data:
-                    break
-                puffer += data  # wird nicht genutzt aber bleibt
-                while "\n" in puffer:
-                    msg, puffer = puffer.split("\n", 1)
-                    if msg:
-                        cmd = json.loads(msg)
-                        if cmd["action"] == "spawn":
-                            with state_lock:
-                                klasse = KLASSEN[cmd["type"]]
-                                # Pekka braucht base_path nicht am Server
-                                unit = t.Ritter(cmd["x"], cmd["y"], player_id) \
-                                       if cmd["type"] == "Ritter" else \
-                                       t.HogRider(cmd["x"], cmd["y"], player_id) \
-                                       if cmd["type"] == "HogRider" else \
-                                       t.Pekka_Server(cmd["x"], cmd["y"], player_id)
-                                if player_id == 1:
-                                    troops_p1.append(unit)
-                                else:
-                                    troops_p2.append(unit)
-            except:
-                break
-
-    def senden():
-        while True:
-            try:
-                komm.send(get_state().encode())
-                time.sleep(1/30)
-            except:
-                break
-
-    threading.Thread(target=empfangen, daemon=True).start()
-    threading.Thread(target=senden,    daemon=True).start()
-
-threading.Thread(target=game_loop, daemon=True).start()
-
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-s.bind(("", 50000))
-s.listen(2)
-print("Server läuft...")
-
-player_id = 1
-try:
-    while True:
-        komm, addr = s.accept()
-        threading.Thread(target=handle_client,
-                         args=(komm, player_id), daemon=True).start()
-        player_id += 1
-finally:
-    s.close()
+import pygame
+import sys
+import os
+from map import GameMap
+from troops import Tower, MainTower, SecTower, Pekka, Ritter, HogRider
+ 
+ 
+BASE_DIR = os.path.dirname(__file__)
+ 
+path_blau = os.path.join(BASE_DIR, "assets", "türme", "turm_blau_1.png")
+path_rot = os.path.join(BASE_DIR, "assets", "türme", "turm_rot_1.png")
+base_bath = os.path.join(BASE_DIR)
+pygame.init()
+ 
+WIDTH, HEIGHT = 640, 673
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Clash Mini System")
+ 
+clock = pygame.time.Clock()
+ 
+ 
+# ----------------------------
+# MAP
+# ----------------------------
+game_map = GameMap(
+    os.path.join(BASE_DIR, "assets", "map.png"),
+    (WIDTH, HEIGHT)
+)
+ 
+blue_towers = [
+    SecTower(180, 450, 0, path_blau),
+    SecTower(410, 450, 0, path_blau),
+    MainTower(0, path_blau)
+]
+red_towers = [
+    SecTower(180, 140, 1, path_rot),
+    SecTower(410, 140, 1, path_rot),
+    MainTower(1, path_rot)
+]
+ 
+towers = red_towers + blue_towers
+ 
+#müll
+troops=[]
+ritter_p2  = Ritter(x=200, y=200, owner=2)
+pekka_p2   = Pekka(x=250, y=200, owner=2,base_path=base_bath)
+hog_p2     = HogRider(x=370, y=200, owner=2)
+enemys = [hog_p2,pekka_p2,ritter_p2]
+# ----------------------------
+# GAME LOOP
+# ----------------------------
+running = True
+ 
+while running:
+    clock.tick(30)
+ 
+ 
+    # Ziele jeden Frame neu berechnen
+    # ... draw ...
+ 
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+ 
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if game_map.is_allowed(event.pos):
+                x,y=event.pos
+                #print(x,y)
+                P1 = Pekka(x, y, 1, BASE_DIR)
+ 
+                #P1.set_target()
+ 
+                troops.append(P1)
+                print(troops)
+   
+   
+   
+    red_targets  = red_towers + enemys
+    blue_targets = blue_towers + troops
+    for troop in troops:
+        troop.next_Step(red_targets)  # ← fehlt noch!
+    for enemy in enemys:
+        enemy.next_Step(blue_targets)
+ 
+    # Tote entfernen
+    troops = [t for t in troops if t.hp > 0]
+    towers = [t for t in towers if t.hp > 0]
+    enemys = [e for e in enemys if e.hp > 0]
+ 
+    # ----------------------------
+    # DRAW
+    # ----------------------------
+    game_map.draw(screen)
+ 
+    for t in towers:
+        t.draw(screen)
+   
+    for troop in troops:
+        ziel, _ = troop.next_objekt(red_targets)
+        troop.update(ziel)
+        troop.draw(screen)
+       
+    for t in enemys:
+        t.draw_circle(screen)
+ 
+    game_map.draw_debug(screen)
+ 
+    pygame.display.flip()
+ 
+pygame.quit()
+sys.exit()
