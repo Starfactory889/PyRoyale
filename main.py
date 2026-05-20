@@ -1,7 +1,6 @@
 import pygame
 import sys
 import os
-
 from map import GameMap
 from troops import Tower, MainTower, SecTower, Pekka, Ritter, HogRider
 
