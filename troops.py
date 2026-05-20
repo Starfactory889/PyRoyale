@@ -1,4 +1,3 @@
-import pygame
 import os
 from entity_animation import AnimatedEntity
 import math
@@ -76,10 +75,11 @@ class Unit:
     def die(self):
         print(f"Unit {self.id} gestorben")
         
+    '''
     def draw_circle(self, screen):
         pygame.draw.circle(screen, (255, 0, 0), (int(self.x), int(self.y)), 5)
         return screen
-
+    '''
 
 # =========================
 # TROOPS
@@ -133,35 +133,25 @@ class Ritter(Unit):
         super().__init__(x, y, 600, 120, 0.8, 2, 4, owner)
 
 
-# =========================
-# 🏰 TOWER SYSTEM
-# =========================
+
 class Tower(Unit):
-    def __init__(self, x, y, image_path, owner):
+    def __init__(self, x, y, owner):
         super().__init__(x, y, 2000, 100, 0, 200, 0, owner)
 
-        self.image = pygame.image.load(image_path).convert_alpha()
-        self.image = pygame.transform.scale(self.image, (60, 60))
-
-    def draw(self, screen):
-        screen.blit(self.image, (self.x, self.y))
-
-        ratio = self.hp / self.max_hp
-        pygame.draw.rect(screen, (0, 0, 0), (self.x, self.y - 8, 60, 5))
-        pygame.draw.rect(screen, (0, 255, 0), (self.x, self.y - 8, 60 * ratio, 5))
+        
 
 
 # =========================
 # 👑 MAIN TOWER (KING TOWER)
 # =========================
 class MainTower(Tower):
-    def __init__(self, owner, image_path):
+    def __init__(self, owner):
         if owner == 1:
             x, y = 295, 100
         else:
             x, y = 295, 490
 
-        super().__init__(x, y, image_path, owner)
+        super().__init__(x, y, owner)
         self.hp = 5000
         self.max_hp = 5000
 
@@ -170,7 +160,7 @@ class MainTower(Tower):
 # 🏰 SIDE TOWERS
 # =========================
 class SecTower(Tower):
-    def __init__(self, x, y, owner, image_path):
-        super().__init__(x, y, image_path, owner)
+    def __init__(self, x, y, owner):
+        super().__init__(x, y, owner)
         self.hp = 3000
         self.max_hp = 3000
