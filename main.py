@@ -40,7 +40,7 @@ red_towers = [
 
 towers = red_towers + blue_towers
 
-
+#müll
 troops=[]
 ritter_p2  = Ritter(x=200, y=200, owner=2)
 pekka_p2   = Pekka(x=250, y=200, owner=2,base_path=base_bath)

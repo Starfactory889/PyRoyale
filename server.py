@@ -3,24 +3,23 @@ import troops as t
 
 # Spielzustand
 state_lock = threading.Lock()
+
 troops_p1 = []   # Spieler 1 (Blau)
 troops_p2 = []   # Spieler 2 (Rot)
 
-path_blau = "./assets/türme/turm_blau_1.png"
-path_rot  = "./assets/türme/turm_rot_1.png"
+blue_towers = [t.SecTower(180, 450, 0),
+               t.SecTower(410, 450, 0),
+               t.MainTower(0)]
 
-blue_towers = [t.SecTower(180, 450, 0, path_blau),
-               t.SecTower(410, 450, 0, path_blau),
-               t.MainTower(0, path_blau)]
-red_towers  = [t.SecTower(180, 140, 1, path_rot),
-               t.SecTower(410, 140, 1, path_rot),
-               t.MainTower(1, path_rot)]
+red_towers  = [t.SecTower(180, 140, 1),
+               t.SecTower(410, 140, 1),
+               t.MainTower(1)]
 
 KLASSEN = {"Pekka": t.Pekka, "Ritter": t.Ritter, "HogRider": t.HogRider}
 
 def serialize(units):
     return [{"id": u.id, "type": u.__class__.__name__,
-             "x": u.x, "y": u.y, "hp": u.hp, "max_hp": u.max_hp, "owner": u.owner}
+            "x": u.x, "y": u.y, "hp": u.hp, "max_hp": u.max_hp, "owner": u.owner}
             for u in units]
 
 def get_state():
@@ -36,6 +35,9 @@ def game_loop():
     global troops_p1, troops_p2
     while True:
         with state_lock:
+            troops_p1 = [t for t in troops_p1 if t.hp > 0]
+            troops_p2 = [t for t in troops_p2 if t.hp > 0]
+            
             red_targets  = [t for t in red_towers  if t.hp > 0] + troops_p2
             blue_targets = [t for t in blue_towers if t.hp > 0] + troops_p1
 
@@ -44,11 +46,9 @@ def game_loop():
             for troop in troops_p2:
                 troop.next_Step(blue_targets)
 
-            troops_p1 = [t for t in troops_p1 if t.hp > 0]
-            troops_p2 = [t for t in troops_p2 if t.hp > 0]
-
         time.sleep(1/60)
 
+#nested funktion
 def handle_client(komm, player_id):
     print(f"Spieler {player_id} verbunden")
 
@@ -67,12 +67,15 @@ def handle_client(komm, player_id):
                         if cmd["action"] == "spawn":
                             with state_lock:
                                 klasse = KLASSEN[cmd["type"]]
-                                # Pekka braucht base_path nicht am Server
-                                unit = t.Ritter(cmd["x"], cmd["y"], player_id) \
-                                       if cmd["type"] == "Ritter" else \
-                                       t.HogRider(cmd["x"], cmd["y"], player_id) \
-                                       if cmd["type"] == "HogRider" else \
-                                       t.Pekka_Server(cmd["x"], cmd["y"], player_id)
+                                # müssen noch auf mehr truppen angepasst werden 
+                            
+                                if cmd["type"] == "Ritter":
+                                    unit = t.Ritter(cmd["x"], cmd["y"], player_id)
+                                elif cmd["type"] == "HogRider":
+                                    unit = t.HogRider(cmd["x"], cmd["y"], player_id)
+                                else:
+                                    unit = t.Pekka_Server(cmd["x"], cmd["y"], player_id)
+                            
                                 if player_id == 1:
                                     troops_p1.append(unit)
                                 else:
@@ -99,12 +102,12 @@ s.bind(("", 50000))
 s.listen(2)
 print("Server läuft...")
 
-player_id = 1
+
 try:
-    while True:
+    for player_id in range(1,3):
         komm, addr = s.accept()
         threading.Thread(target=handle_client,
                          args=(komm, player_id), daemon=True).start()
-        player_id += 1
+        
 finally:
     s.close()
