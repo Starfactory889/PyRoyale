@@ -33,7 +33,17 @@ def draw_tower(screen, tower, image):
     pygame.draw.rect(screen, (0,0,0),   (int(tower["x"]), int(tower["y"])-8, 60, 5))
     pygame.draw.rect(screen, (0,255,0), (int(tower["x"]), int(tower["y"])-8, int(60*ratio), 5))
 
+def draw_unit_animated(unit): # 'targets' wird nicht mehr benötigt!
+    anim = get_or_create_anim(unit)
+    anim.x = int(unit["x"])
+    anim.y = int(unit["y"])
+    
+    # Wir nehmen direkt den Winkel, den der Server berechnet hat
+    anim.winkel = unit.get("winkel", 0) 
 
+    anim.update()
+    anim.draw(screen)
+    
 def get_or_create_anim(unit):
     uid = unit["id"]
     if uid not in animations:
@@ -48,13 +58,6 @@ def get_or_create_anim(unit):
             spawn_frames=5
         )
     return animations[uid]
-
-def draw_unit_animated(unit):
-    anim = get_or_create_anim(unit)
-    anim.x = int(unit["x"])
-    anim.y = int(unit["y"])
-    anim.update()
-    anim.draw(screen)
 
 def draw_unit_circle(unit, color):
     pygame.draw.circle(screen, color, (int(unit["x"]), int(unit["y"])), 5)
@@ -96,28 +99,29 @@ while running:
             running = False
         if event.type == pygame.MOUSEBUTTONDOWN:
             if game_map.is_allowed(event.pos):
-                spawn("Pekka", *event.pos)
+                 spawn("Pekka", *event.pos)
 
     game_map.draw(screen)
 
     with state_lock:
-        for u in state["blue_towers"] + state["red_towers"]:
-            # Turm zeichnen als Rechteck (kein Bild am Client nötig)
-            for tower in state["blue_towers"]:
-                draw_tower(screen, tower, img_blau)
-            for tower in state["red_towers"]:
-                draw_tower(screen, tower, img_rot)
-            pygame.draw.rect(screen, (100,100,200) if u["owner"]==0 else (200,100,100),
-                             (int(u["x"]), int(u["y"]), 60, 60))
-            ratio = max(u["hp"] / u["max_hp"], 0)
-            pygame.draw.rect(screen, (0,0,0),   (int(u["x"]), int(u["y"])-8, 60, 5))
-            pygame.draw.rect(screen, (0,255,0), (int(u["x"]), int(u["y"])-8, int(60*ratio), 5))
+        # 1. Türme zeichnen
+        for tower in state["blue_towers"] + state["red_towers"]:
+            # Blau ist Team 0 (Server Index), Rot ist Team 1
+            img = img_blau if tower["owner"] == 0 else img_rot
+            draw_tower(screen, tower, img)
 
-        for u in state["troops_p1"]:
-            draw_unit_animated(u)
-
-        for u in state["troops_p2"]:
-            draw_unit_circle(u, (255, 50, 50))
+        # 2. Alle Truppen beider Listen durchgehen
+        all_troops = state["troops_p1"] + state["troops_p2"]
+        for u in all_troops:
+            # Wenn die Einheit mir gehört -> Animiert zeichnen
+            # (PLAYER_ID ist 1 oder 2, owner am Server ist auch 1 oder 2)
+            if u["owner"] == PLAYER_ID:
+                # Hier können wir die Ziele für die Rotation mitgeben
+                targets = state["red_towers"] + state["troops_p2"] if PLAYER_ID == 1 else state["blue_towers"] + state["troops_p1"]
+                draw_unit_animated(u) 
+            else:
+                # Feindliche Einheiten (optional auch animiert oder als Kreis)
+                draw_unit_circle(u, (255, 50, 50))
 
     game_map.draw_debug(screen)
     pygame.display.flip()

@@ -17,10 +17,18 @@ red_towers  = [t.SecTower(180, 140, 1),
 
 KLASSEN = {"Pekka": t.Pekka, "Ritter": t.Ritter, "HogRider": t.HogRider}
 
+# In server.py
 def serialize(units):
-    return [{"id": u.id, "type": u.__class__.__name__,
-            "x": u.x, "y": u.y, "hp": u.hp, "max_hp": u.max_hp, "owner": u.owner}
-            for u in units]
+    return [{
+        "id": u.id, 
+        "type": u.__class__.__name__, # Liefert "Pekka", "Ritter", etc.
+        "x": u.x, 
+        "y": u.y, 
+        "hp": u.hp, 
+        "max_hp": u.max_hp, 
+        "owner": u.owner,
+        "winkel": u.current_angle
+    } for u in units]
 
 def get_state():
     with state_lock:
@@ -74,7 +82,7 @@ def handle_client(komm, player_id):
                                 elif cmd["type"] == "HogRider":
                                     unit = t.HogRider(cmd["x"], cmd["y"], player_id)
                                 else:
-                                    unit = t.Pekka_Server(cmd["x"], cmd["y"], player_id)
+                                    unit = t.Pekka(cmd["x"], cmd["y"], player_id)
                             
                                 if player_id == 1:
                                     troops_p1.append(unit)
@@ -104,10 +112,12 @@ print("Server läuft...")
 
 
 try:
-    for player_id in range(1,3):
+    player_id = 1
+    while True:
         komm, addr = s.accept()
         threading.Thread(target=handle_client,
-                         args=(komm, player_id), daemon=True).start()
-        
+                        args=(komm, player_id), daemon=True).start()
+        if player_id < 2:
+            player_id += 1        
 finally:
     s.close()

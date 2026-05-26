@@ -6,33 +6,28 @@ pygame.init()
 BASE_DIR = os.path.dirname(__file__)
 path_blau = os.path.join(BASE_DIR, "assets", "türme", "turm_blau_1.png")
 path_rot  = os.path.join(BASE_DIR, "assets", "türme", "turm_rot_1.png")
+path_map  = os.path.join(BASE_DIR, "assets", "map.png")
 WIDTH, HEIGHT = 640, 673
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
+
+# MAP Initialisierung und 180° Drehung
 game_map = GameMap(os.path.join(BASE_DIR, "assets", "map.png"), (WIDTH, HEIGHT))
 
-# Bilder einmal laden
+# Bilder laden und skalieren
 img_blau = pygame.image.load(path_blau).convert_alpha()
 img_blau = pygame.transform.scale(img_blau, (60, 60))
 img_rot  = pygame.image.load(path_rot).convert_alpha()
 img_rot  = pygame.transform.scale(img_rot, (60, 60))
 
-PLAYER_ID = 2  # ← 1 oder 2 je nach Client
 
-# Spielzustand — nur Dicts, keine Klassen
-state = {"troops_p1": [], "troops_p2": [],
-         "blue_towers": [], "red_towers": []}
+PLAYER_ID = 2 
+state = {"troops_p1": [], "troops_p2": [], "blue_towers": [], "red_towers": []}
 state_lock = threading.Lock()
+animations = {}
 
-# Animationen pro Einheit speichern
-animations = {}  # id → AnimatedEntity
-
-def draw_tower(screen, tower, image):
-    screen.blit(image, (int(tower["x"]), int(tower["y"])))
-    ratio = max(tower["hp"] / tower["max_hp"], 0)
-    pygame.draw.rect(screen, (0,0,0),   (int(tower["x"]), int(tower["y"])-8, 60, 5))
-    pygame.draw.rect(screen, (0,255,0), (int(tower["x"]), int(tower["y"])-8, int(60*ratio), 5))
-
+def flip(pos):
+    return (WIDTH - pos[0], HEIGHT - pos[1])
 
 def get_or_create_anim(unit):
     uid = unit["id"]
@@ -49,79 +44,88 @@ def get_or_create_anim(unit):
         )
     return animations[uid]
 
-def draw_unit_animated(unit):
+def draw_tower_flipped(screen, tower, image):
+    fx, fy = flip((tower["x"], tower["y"]))
+    screen.blit(image, (fx - 30, fy - 30))
+    
+    ratio = max(tower["hp"] / tower["max_hp"], 0)
+    
+    pygame.draw.rect(screen, (0,0,0),   (fx - 30, fy - 38, 60, 5))   # ← fx/fy statt tower["x"]/tower["y"]
+    pygame.draw.rect(screen, (0,255,0), (fx - 30, fy - 38, int(60*ratio), 5))
+    
+
+
+def draw_unit_animated_flipped(unit):
     anim = get_or_create_anim(unit)
-    anim.x = int(unit["x"])
-    anim.y = int(unit["y"])
+    anim.x, anim.y = flip((unit["x"], unit["y"]))
+    anim.winkel = unit.get("winkel", 0) + 180 
     anim.update()
     anim.draw(screen)
-
-def draw_unit_circle(unit, color):
-    pygame.draw.circle(screen, color, (int(unit["x"]), int(unit["y"])), 5)
-    ratio = max(unit["hp"] / unit["max_hp"], 0)
-    pygame.draw.rect(screen, (0,0,0),   (int(unit["x"])-15, int(unit["y"])-12, 30, 4))
-    pygame.draw.rect(screen, (0,255,0), (int(unit["x"])-15, int(unit["y"])-12, int(30*ratio), 4))
 
 def spawn(troop_type, x, y):
     cmd = json.dumps({"action": "spawn", "type": troop_type, "x": x, "y": y})
     s.send((cmd + "\n").encode())
 
-# Netzwerk
+# Netzwerk Setup
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.connect(("127.0.0.1", 50000))
+try:
+    s.connect(("127.0.0.1", 50000))
+except:
+    print("Server nicht gefunden!")
+    sys.exit()
 
 def empfangen():
     puffer = ""
     while True:
-        data = s.recv(4096).decode()
-        puffer += data
-        while "\n" in puffer:
-            msg, puffer = puffer.split("\n", 1)
-            if msg:
-                with state_lock:
-                    state.update(json.loads(msg))
-                    
-                    
-                    
+        try:
+            data = s.recv(4096).decode()
+            puffer += data
+            while "\n" in puffer:
+                msg, puffer = puffer.split("\n", 1)
+                if msg:
+                    with state_lock:
+                        state.update(json.loads(msg))
+        except: break
 
 threading.Thread(target=empfangen, daemon=True).start()
 
-# Game Loop
+# --- Hauptschleife ---
 running = True
 while running:
     clock.tick(60)
-
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
         if event.type == pygame.MOUSEBUTTONDOWN:
-            if game_map.is_allowed(event.pos):
-                spawn("Pekka", *event.pos)
+            # Klick für Server zurückdrehen
+            real_x, real_y = flip(event.pos)
+            if game_map.is_allowed((real_x, real_y)):
+                spawn("Pekka", real_x, real_y)
 
     game_map.draw(screen)
 
     with state_lock:
-        for u in state["blue_towers"] + state["red_towers"]:
-            # Turm zeichnen als Rechteck (kein Bild am Client nötig)
-            for tower in state["blue_towers"]:
-                draw_tower(screen, tower, img_blau)
-            for tower in state["red_towers"]:
-                draw_tower(screen, tower, img_rot)
-            pygame.draw.rect(screen, (100,100,200) if u["owner"]==0 else (200,100,100),
-                             (int(u["x"]), int(u["y"]), 60, 60))
-            ratio = max(u["hp"] / u["max_hp"], 0)
-            pygame.draw.rect(screen, (0,0,0),   (int(u["x"]), int(u["y"])-8, 60, 5))
-            pygame.draw.rect(screen, (0,255,0), (int(u["x"]), int(u["y"])-8, int(60*ratio), 5))
+        # 1. Türme gespiegelt
+        for tower in state["blue_towers"] + state["red_towers"]:
+            img = img_rot if tower["owner"] == 0 else img_blau
+            draw_tower_flipped(screen, tower, img)
 
-        for u in state["troops_p1"]:
-            draw_unit_animated(u)
+        # 2. Truppen gespiegelt
+        all_troops = state["troops_p1"] + state["troops_p2"]
+        active_ids = [u["id"] for u in all_troops]
+        
+        for u in all_troops:
+            if u["owner"] == PLAYER_ID:
+                draw_unit_animated_flipped(u)
+            else:
+                # Feinde als gespiegelte Kreise
+                fx, fy = flip((u["x"], u["y"]))
+                pygame.draw.circle(screen, (255, 50, 50), (int(fx), int(fy)), 10)
+        
+        # Aufräumen alter Animationen (Memory Leak Schutz)
+        animations = {uid: anim for uid, anim in animations.items() if uid in active_ids}
 
-        for u in state["troops_p2"]:
-            draw_unit_circle(u, (255, 50, 50))
-
-    game_map.draw_debug(screen)
     pygame.display.flip()
 
 pygame.quit()
 s.close()
-sys.exit()
