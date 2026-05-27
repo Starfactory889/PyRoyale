@@ -6,6 +6,7 @@ state_lock = threading.Lock()
 clients = [] 
 troops_p1 = []   # Spieler 1 (Blau)
 troops_p2 = []   # Spieler 2 (Rot)
+winner  =None
 
 blue_towers = [t.SecTower(180, 450, 0),
                t.SecTower(410, 450, 0),
@@ -38,17 +39,12 @@ def get_state():
             "troops_p2":   serialize(troops_p2),
             "blue_towers": serialize(blue_towers),
             "red_towers":  serialize(red_towers),
+            "winner": winner,
         }) + "\n"
         
-def broadcast(msg):
-    for komm in clients:
-        try:
-            komm.send(msg.encode())
-        except:
-            pass
         
 def game_loop():
-    global troops_p1, troops_p2
+    global troops_p1, troops_p2,winner
     last_time = time.perf_counter()
     while True:
         now = time.perf_counter()
@@ -65,20 +61,21 @@ def game_loop():
                 troop.next_Step(red_targets,dt)
             for troop in troops_p2:
                 troop.next_Step(blue_targets,dt)
-        
-        winner = check_winner()
-        if winner:
-            broadcast(f'{{"winner": {winner}}}\n')
 
+            
+            if winner is None:
+                winner = check_winner()
         time.sleep(1/60)
         
 def check_winner():
     for tower in blue_towers:
         if isinstance(tower, t.MainTower) and tower.hp <= 0:
             return 2  # Rot gewinnt
+        
     for tower in red_towers:
         if isinstance(tower, t.MainTower) and tower.hp <= 0:
             return 1  # Blau gewinnt
+        
     return None
 
 #nested funktion
@@ -114,7 +111,11 @@ def handle_client(komm, player_id):
                                     troops_p1.append(unit)
                                 else:
                                     troops_p2.append(unit)
-            except:
+                                    
+            except Exception as e:
+                print(f"Server empfangen Fehler (Spieler {player_id}): {e}")  # ← echter Fehler
+                import traceback
+                traceback.print_exc()
                 break
  
     def senden():
@@ -137,13 +138,14 @@ s.listen(2)
 print("Server läuft...")
 
 
-try:
-    komm1, addr1 = s.accept()
-    print(f"Spieler 1 verbunden: {addr1}")
-    threading.Thread(target=handle_client, args=(komm1, 1), daemon=True).start()
 
-    komm2, addr2 = s.accept()
-    print(f"Spieler 2 verbunden: {addr2}")
-    threading.Thread(target=handle_client, args=(komm2, 2), daemon=True).start()       
+try:
+    player_id = 1
+    while True:
+        komm, addr = s.accept()
+        threading.Thread(target=handle_client,
+                        args=(komm, player_id), daemon=True).start()
+        player_id += 1
+        
 finally:
     s.close()

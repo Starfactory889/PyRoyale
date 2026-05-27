@@ -21,7 +21,9 @@ PLAYER_ID = 1  # ← 1 oder 2 je nach Client
 
 # Spielzustand — nur Dicts, keine Klassen
 state = {"troops_p1": [], "troops_p2": [],
-         "blue_towers": [], "red_towers": []}
+         "blue_towers": [], "red_towers": [],
+         "winner" : None,
+         }
 state_lock = threading.Lock()
 
 # Animationen pro Einheit speichern
@@ -73,9 +75,11 @@ def empfangen():
         puffer += data
         while "\n" in puffer:
             msg, puffer = puffer.split("\n", 1)
+            
             if msg:
+                parsed = json.loads(msg)
                 with state_lock:
-                    state.update(json.loads(msg))
+                    state.update(parsed)
                     
                     
                     
@@ -96,6 +100,18 @@ while running:
 
     game_map.draw(screen)
 
+    with state_lock:
+        winner = state.get("winner")
+    if winner:
+        screen.fill((0, 0, 0))
+        font = pygame.font.SysFont(None, 80)
+        text = font.render(f"Spieler {winner} gewinnt!", True, (255, 255, 0))
+        screen.blit(text, (WIDTH//2 - text.get_width()//2, HEIGHT//2))
+        pygame.display.flip()
+        pygame.time.wait(3000)
+        break 
+    
+    
     with state_lock:
         # 1. Türme zeichnen
         for tower in state["blue_towers"] + state["red_towers"]:

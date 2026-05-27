@@ -22,7 +22,10 @@ img_rot  = pygame.transform.scale(img_rot, (60, 60))
 
 
 PLAYER_ID = 2 
-state = {"troops_p1": [], "troops_p2": [], "blue_towers": [], "red_towers": []}
+state = {"troops_p1": [], "troops_p2": [],
+         "blue_towers": [], "red_towers": [],
+         "winner" : None,
+         }
 state_lock = threading.Lock()
 animations = {}
 
@@ -104,6 +107,17 @@ while running:
 
     game_map.draw(screen)
 
+    
+    with state_lock:
+        winner = state.get("winner")
+    if winner:
+        screen.fill((0, 0, 0))
+        font = pygame.font.SysFont(None, 80)
+        text = font.render(f"Spieler {winner} gewinnt!", True, (255, 255, 0))
+        screen.blit(text, (WIDTH//2 - text.get_width()//2, HEIGHT//2))
+        pygame.display.flip()
+        pygame.time.wait(3000)
+        break 
     with state_lock:
         # 1. Türme gespiegelt
         for tower in state["blue_towers"] + state["red_towers"]:
