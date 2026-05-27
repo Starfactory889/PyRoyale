@@ -40,7 +40,7 @@ class Unit:
                 next_enemy = enemy
         return next_enemy,min_d
     
-    def next_Step(self,enemys:list):
+    def next_Step(self,enemys:list, dt: float):
         enemy,d = self.next_objekt(enemys)
         if enemy is None:
             return
@@ -50,17 +50,15 @@ class Unit:
         
         else:
             d,(dx,dy) = self.distance(enemy)
-            x,y = self.move(d,dx,dy)
-            
+            x,y = self.move(d,dx,dy,dt)
             self.current_angle = math.degrees(math.atan2(-dy, dx)) - 90
-            
             return x,y
             
             
             
-    def move(self,d,dx,dy):
-        self.x = round(self.x + (dx / d) * self.speed,2)
-        self.y = round(self.y + (dy / d) * self.speed,2)
+    def move(self,d,dx,dy,dt):
+        self.x = round(self.x + (dx / d) * self.speed * dt,2)
+        self.y = round(self.y + (dy / d) * self.speed * dt,2)
         return self.x,self.y
             
 
@@ -85,17 +83,17 @@ class Unit:
 class Pekka(Unit):
     """Pekka ohne Animation – nur für Serverlogik"""
     def __init__(self, x, y, owner):
-        super().__init__(x, y, 1000, 200, 2.5, 50, 6, owner)
+        super().__init__(x, y, 1000, 200, 150, 50, 6, owner)
         
 
 class HogRider(Unit):
     def __init__(self, x, y, owner):
-        super().__init__(x, y, 500, 100, 1, 3, 3, owner)
+        super().__init__(x, y, 500, 100, 60, 3, 3, owner)
 
 
 class Ritter(Unit):
     def __init__(self, x, y, owner):
-        super().__init__(x, y, 600, 120, 0.8, 2, 4, owner)
+        super().__init__(x, y, 600, 120, 48, 2, 4, owner)
 
 
 

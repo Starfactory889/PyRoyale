@@ -33,16 +33,15 @@ def draw_tower(screen, tower, image):
     pygame.draw.rect(screen, (0,0,0),   (int(tower["x"]), int(tower["y"])-8, 60, 5))
     pygame.draw.rect(screen, (0,255,0), (int(tower["x"]), int(tower["y"])-8, int(60*ratio), 5))
 
-def draw_unit_animated(unit): # 'targets' wird nicht mehr benötigt!
+def draw_unit_animated(unit,dt): # 'targets' wird nicht mehr benötigt!
     anim = get_or_create_anim(unit)
     anim.x = int(unit["x"])
     anim.y = int(unit["y"])
-    
     # Wir nehmen direkt den Winkel, den der Server berechnet hat
     anim.winkel = unit.get("winkel", 0) 
-
-    anim.update()
+    anim.update(dt)
     anim.draw(screen)
+
     
 def get_or_create_anim(unit):
     uid = unit["id"]
@@ -58,13 +57,7 @@ def get_or_create_anim(unit):
             spawn_frames=5
         )
     return animations[uid]
-
-def draw_unit_circle(unit, color):
-    pygame.draw.circle(screen, color, (int(unit["x"]), int(unit["y"])), 5)
-    ratio = max(unit["hp"] / unit["max_hp"], 0)
-    pygame.draw.rect(screen, (0,0,0),   (int(unit["x"])-15, int(unit["y"])-12, 30, 4))
-    pygame.draw.rect(screen, (0,255,0), (int(unit["x"])-15, int(unit["y"])-12, int(30*ratio), 4))
-
+    
 def spawn(troop_type, x, y):
     cmd = json.dumps({"action": "spawn", "type": troop_type, "x": x, "y": y})
     s.send((cmd + "\n").encode())
@@ -92,7 +85,7 @@ threading.Thread(target=empfangen, daemon=True).start()
 # Game Loop
 running = True
 while running:
-    clock.tick(60)
+    dt = clock.tick(60) / 1000.0
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -115,13 +108,8 @@ while running:
         for u in all_troops:
             # Wenn die Einheit mir gehört -> Animiert zeichnen
             # (PLAYER_ID ist 1 oder 2, owner am Server ist auch 1 oder 2)
-            if u["owner"] == PLAYER_ID:
-                # Hier können wir die Ziele für die Rotation mitgeben
-                targets = state["red_towers"] + state["troops_p2"] if PLAYER_ID == 1 else state["blue_towers"] + state["troops_p1"]
-                draw_unit_animated(u) 
-            else:
-                # Feindliche Einheiten (optional auch animiert oder als Kreis)
-                draw_unit_circle(u, (255, 50, 50))
+            targets = state["red_towers"] + state["troops_p2"] if PLAYER_ID == 1 else state["blue_towers"] + state["troops_p1"]
+            draw_unit_animated(u,dt) 
 
     game_map.draw_debug(screen)
     pygame.display.flip()
