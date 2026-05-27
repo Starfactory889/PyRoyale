@@ -4,7 +4,7 @@ import os
 from map import GameMap
 from troops import Tower, MainTower, SecTower, Pekka, Ritter, HogRider
 
-
+selected_card = 0
 BASE_DIR = os.path.dirname(__file__)
 
 path_blau = os.path.join(BASE_DIR, "assets", "türme", "turm_blau_1.png")
@@ -58,20 +58,49 @@ while running:
     # Ziele jeden Frame neu berechnen
     # ... draw ...
 
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
+    selected_types = [Pekka, Ritter, HogRider, Pekka]
 
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            if game_map.is_allowed(event.pos):
-                x,y=event.pos
-                #print(x,y)
-                P1 = Pekka(x, y, 1, BASE_DIR)
+for event in pygame.event.get():
 
-                #P1.set_target()
+    # ----------------------------
+    # Spiel schließen
+    # ----------------------------
+    if event.type == pygame.QUIT:
+        running = False
 
-                troops.append(P1)
-                print(troops)
+    # ----------------------------
+    # Karten auswählen (1–4)
+    # ----------------------------
+    if event.type == pygame.KEYDOWN:
+
+        if event.key == pygame.K_1:
+            selected_card = 0
+
+        elif event.key == pygame.K_2:
+            selected_card = 1
+
+        elif event.key == pygame.K_3:
+            selected_card = 2
+
+        elif event.key == pygame.K_4:
+            selected_card = 3
+
+    # ----------------------------
+    # Einheit spawnen
+    # ----------------------------
+    if event.type == pygame.MOUSEBUTTONDOWN:
+
+        if game_map.is_allowed(event.pos):
+
+            x, y = event.pos
+
+            troop_class = selected_types[selected_card]
+
+            P1 = troop_class(x, y, 1, BASE_DIR)
+
+            troops.append(P1)
+
+            print("Spawn:", troop_class.__name__)
     
     
     

@@ -1,95 +1,151 @@
-import pygame, socket, threading, json, sys, os, math
+import pygame, socket, threading, json, os
 from map import GameMap
 from entity_animation import AnimatedEntity
+from troops import Pekka, Ritter, HogRider
 
 pygame.init()
+
 BASE_DIR = os.path.dirname(__file__)
-path_blau = os.path.join(BASE_DIR, "assets", "türme", "turm_blau_1.png")
-path_rot  = os.path.join(BASE_DIR, "assets", "türme", "turm_rot_1.png")
 WIDTH, HEIGHT = 640, 673
+
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Clash Mini – Spieler 1")
 clock = pygame.time.Clock()
+
 game_map = GameMap(os.path.join(BASE_DIR, "assets", "map.png"), (WIDTH, HEIGHT))
 
-# Bilder einmal laden
-img_blau = pygame.image.load(path_blau).convert_alpha()
-img_blau = pygame.transform.scale(img_blau, (60, 60))
-img_rot  = pygame.image.load(path_rot).convert_alpha()
-img_rot  = pygame.transform.scale(img_rot, (60, 60))
+PLAYER_ID = 1
 
-PLAYER_ID = 1  # ← 1 oder 2 je nach Client
+state = {"troops_p1": [], "troops_p2": [], "blue_towers": [], "red_towers": []}
+lock = threading.Lock()
 
-# Spielzustand — nur Dicts, keine Klassen
-state = {"troops_p1": [], "troops_p2": [],
-         "blue_towers": [], "red_towers": []}
-state_lock = threading.Lock()
+deck = ["Pekka", "Ritter", "HogRider", "Drache"]
+selected_card = 0
 
-# Animationen pro Einheit speichern
-animations = {}  # id → AnimatedEntity
+ANIM_MAP = {
+    "Pekka":    ("pekka",   "pekka_m",   "pekka_s"),
+    "HogRider": ("hogrider", "hogrider_m", "hogrider_s"),  # eigene Assets wenn vorhanden
+    "Drache":   ("drachen", "drachen_m", "drachen_s"),     # ← korrekter Eintrag
+}
 
-def draw_tower(screen, tower, image):
-    screen.blit(image, (int(tower["x"]), int(tower["y"])))
-    ratio = max(tower["hp"] / tower["max_hp"], 0)
-    pygame.draw.rect(screen, (0,0,0),   (int(tower["x"]), int(tower["y"])-8, 60, 5))
-    pygame.draw.rect(screen, (0,255,0), (int(tower["x"]), int(tower["y"])-8, int(60*ratio), 5))
+slot_img = pygame.image.load(os.path.join(BASE_DIR, "assets", "Kartenslots.png"))
+slot_img = pygame.transform.scale(slot_img, (320, 170))
 
-def draw_unit_animated(unit): # 'targets' wird nicht mehr benötigt!
-    anim = get_or_create_anim(unit)
-    anim.x = int(unit["x"])
-    anim.y = int(unit["y"])
-    
-    # Wir nehmen direkt den Winkel, den der Server berechnet hat
-    anim.winkel = unit.get("winkel", 0) 
+card_images = []
+for name in deck:
+    path = os.path.join(BASE_DIR, "assets", "cards", f"{name.lower()}_card.png")
+    if os.path.exists(path):
+        img = pygame.image.load(path)
+        img = pygame.transform.scale(img, (74, 106))
+        card_images.append(img)
+    else:
+        card_images.append(None)
 
-    anim.update()
-    anim.draw(screen)
-    
-def get_or_create_anim(unit):
-    uid = unit["id"]
+def load_tower_img(color, size=(48, 48)):
+    path = os.path.join(BASE_DIR, "assets", "türme", f"turm_{color}_1.png")
+    if os.path.exists(path):
+        img = pygame.image.load(path)
+        return pygame.transform.scale(img, size)
+    return None
+
+tower_img_blue = load_tower_img("blau")
+tower_img_red  = load_tower_img("rot")
+
+animations = {}
+
+def get_anim(u):
+    uid = u["id"]
+    troop_type = u.get("type", "Pekka")
     if uid not in animations:
+        folder, move_prefix, stand_prefix = ANIM_MAP.get(troop_type, ("drachen", "drachen_m", "drachen_s"))
         animations[uid] = AnimatedEntity(
-            folder_name="drachen",
-            base_path=os.path.join(BASE_DIR, "assets"),
-            walk_prefix="drachen_m",
-            spawn_prefix="drachen_s",
-            pos=(unit["x"], unit["y"]),
-            size=(40, 40),
-            walk_frames=12,
-            spawn_frames=5
+            folder,
+            os.path.join(BASE_DIR, "assets"),
+            move_prefix,
+            stand_prefix,
+            (u["x"], u["y"]),
+            (40, 40),
+            12,
+            5
         )
     return animations[uid]
 
-def draw_unit_circle(unit, color):
-    pygame.draw.circle(screen, color, (int(unit["x"]), int(unit["y"])), 5)
-    ratio = max(unit["hp"] / unit["max_hp"], 0)
-    pygame.draw.rect(screen, (0,0,0),   (int(unit["x"])-15, int(unit["y"])-12, 30, 4))
-    pygame.draw.rect(screen, (0,255,0), (int(unit["x"])-15, int(unit["y"])-12, int(30*ratio), 4))
+def draw_hp_bar(screen, cx, cy, hp, max_hp, w=32, offset_y=20):
+    if max_hp <= 0:
+        return
+    ratio = max(0, hp / max_hp)
+    bx = cx - w // 2
+    by = cy - offset_y
+    pygame.draw.rect(screen, (40, 40, 40), (bx, by, w, 4))
+    pygame.draw.rect(screen, (60, 200, 80), (bx, by, int(w * ratio), 4))
 
-def spawn(troop_type, x, y):
-    cmd = json.dumps({"action": "spawn", "type": troop_type, "x": x, "y": y})
-    s.send((cmd + "\n").encode())
+def draw_tower(screen, tower, img, cx, cy):
+    size = 48
+    if img:
+        screen.blit(img, (cx - size // 2, cy - size // 2))
+    else:
+        color = (50, 100, 255) if tower.get("owner", 0) == 0 else (255, 60, 60)
+        pygame.draw.rect(screen, color, (cx - 16, cy - 16, 32, 32), border_radius=4)
+    draw_hp_bar(screen, cx, cy, tower["hp"], tower["max_hp"], w=48, offset_y=28)
 
-# Netzwerk
+def spawn(card, x, y):
+    s.send(json.dumps({"action": "spawn", "type": card, "x": x, "y": y}).encode() + b"\n")
+
+def draw_bar():
+    bar_x = WIDTH // 2 - 160
+    bar_y = HEIGHT - 130
+    screen.blit(slot_img, (bar_x, bar_y))
+
+    slot_w = 60
+    slot_h = 80
+    gap = (320 - 4 * slot_w) // 5
+    font = pygame.font.SysFont(None, 22)
+    font_big = pygame.font.SysFont(None, 26)
+
+    for i, name in enumerate(deck):
+        cx = bar_x + gap + i * (slot_w + gap)
+        cy = bar_y + 25
+        is_selected = (i == selected_card)
+
+        
+        if is_selected:
+            screen.blit(card_images[i], (cx-10, cy - 13))  # ← 10px nach oben, Zahl anpassen
+        else:
+            screen.blit(card_images[i], (cx-10, cy))
+        if card_images[i]:
+            if is_selected:
+                screen.blit(card_images[i], (cx-10, cy - 13))
+            else:
+                screen.blit(card_images[i], (cx-10, cy))
+        else:
+            label = font_big.render(name[:3], True, (220, 220, 220) if not is_selected else (40, 40, 40))
+            screen.blit(label, (cx + slot_w // 2 - label.get_width() // 2, cy + slot_h // 2 - label.get_height() // 2))
+# Network
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect(("127.0.0.1", 50000))
 
-def empfangen():
-    puffer = ""
+def recv():
+    buf = ""
     while True:
-        data = s.recv(4096).decode()
-        puffer += data
-        while "\n" in puffer:
-            msg, puffer = puffer.split("\n", 1)
-            if msg:
-                with state_lock:
+        try:
+            data = s.recv(4096).decode()
+            if not data:
+                break
+            buf += data
+            while "\n" in buf:
+                msg, buf = buf.split("\n", 1)
+                with lock:
                     state.update(json.loads(msg))
-                    
-                    
-                    
+        except Exception:
+            break
+    # Verbindung weg → alles leeren
+    with lock:
+        state["troops_p1"].clear()
+        state["troops_p2"].clear()
+    animations.clear()
 
-threading.Thread(target=empfangen, daemon=True).start()
+threading.Thread(target=recv, daemon=True).start()
 
-# Game Loop
 running = True
 while running:
     clock.tick(60)
@@ -97,35 +153,36 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_1: selected_card = 0
+            if event.key == pygame.K_2: selected_card = 1
+            if event.key == pygame.K_3: selected_card = 2
+            if event.key == pygame.K_4: selected_card = 3
         if event.type == pygame.MOUSEBUTTONDOWN:
-            if game_map.is_allowed(event.pos):
-                 spawn("Pekka", *event.pos)
+            x, y = event.pos
+            if game_map.is_allowed((x, y)):
+                spawn(deck[selected_card], x, y)
 
     game_map.draw(screen)
 
-    with state_lock:
-        # 1. Türme zeichnen
-        for tower in state["blue_towers"] + state["red_towers"]:
-            # Blau ist Team 0 (Server Index), Rot ist Team 1
-            img = img_blau if tower["owner"] == 0 else img_rot
-            draw_tower(screen, tower, img)
+    with lock:
+        for tower in state.get("blue_towers", []):
+            draw_tower(screen, tower, tower_img_blue, tower["x"], tower["y"])
+        for tower in state.get("red_towers", []):
+            draw_tower(screen, tower, tower_img_red, tower["x"], tower["y"])
 
-        # 2. Alle Truppen beider Listen durchgehen
-        all_troops = state["troops_p1"] + state["troops_p2"]
-        for u in all_troops:
-            # Wenn die Einheit mir gehört -> Animiert zeichnen
-            # (PLAYER_ID ist 1 oder 2, owner am Server ist auch 1 oder 2)
+        for u in state["troops_p1"] + state["troops_p2"]:
             if u["owner"] == PLAYER_ID:
-                # Hier können wir die Ziele für die Rotation mitgeben
-                targets = state["red_towers"] + state["troops_p2"] if PLAYER_ID == 1 else state["blue_towers"] + state["troops_p1"]
-                draw_unit_animated(u) 
+                anim = get_anim(u)
+                anim.x, anim.y = u["x"], u["y"]
+                anim.update()
+                anim.draw(screen)
             else:
-                # Feindliche Einheiten (optional auch animiert oder als Kreis)
-                draw_unit_circle(u, (255, 50, 50))
+                pygame.draw.circle(screen, (255, 60, 60), (int(u["x"]), int(u["y"])), 10)
+            draw_hp_bar(screen, int(u["x"]), int(u["y"]), u["hp"], u["max_hp"])
 
-    game_map.draw_debug(screen)
+    draw_bar()
     pygame.display.flip()
 
-pygame.quit()
 s.close()
-sys.exit()
+pygame.quit()
