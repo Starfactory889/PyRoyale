@@ -75,11 +75,11 @@ def game_loop():
             elixir_p2 = min(MAX_ELIXIR, elixir_p2 + ELIXIR_PER_SECOND * dt)
 
 
-            troops_p1 = [t for t in troops_p1 if t.hp > 0]
-            troops_p2 = [t for t in troops_p2 if t.hp > 0]
+            troops_p1 = [troop for troop in troops_p1 if troop.hp > 0]
+            troops_p2 = [troop for troop in troops_p2 if troop.hp > 0]
             
-            red_targets  = [t for t in red_towers  if t.hp > 0] + troops_p2
-            blue_targets = [t for t in blue_towers if t.hp > 0] + troops_p1
+            red_targets  = [troop for troop in red_towers  if troop.hp > 0] + troops_p2
+            blue_targets = [troop for troop in blue_towers if troop.hp > 0] + troops_p1
  
             for troop in troops_p1:
                 troop.next_Step(red_targets,dt)
@@ -136,6 +136,8 @@ def handle_client(komm, player_id):
                                             unit = t.HogRider(cmd["x"], cmd["y"], player_id)
                                         elif cmd["type"] == "Pekka":
                                             unit = t.Pekka(cmd["x"], cmd["y"], player_id)
+                                            
+                                        troops_p1.append(unit)
                                         elixir_p1 -= cost
                                 else:
                                     if elixir_p2 > cost:
@@ -145,18 +147,10 @@ def handle_client(komm, player_id):
                                             unit = t.HogRider(cmd["x"], cmd["y"], player_id)
                                         elif cmd["type"] == "Pekka":
                                             unit = t.Pekka(cmd["x"], cmd["y"], player_id)
-
+                                            
+                                        troops_p2.append(unit)
                                         elixir_p2 -= cost
-
-
-                                
-                                
                             
-
-                                if player_id == 1:
-                                    troops_p1.append(unit)
-                                else:
-                                    troops_p2.append(unit)
                                     
             except Exception as e:
                 print(f"Server empfangen Fehler (Spieler {player_id}): {e}")  # ← echter Fehler

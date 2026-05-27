@@ -110,8 +110,6 @@ while running:
 
     print(state["elixir_p2"])
 
-    print(state["elixir_p2"])
-
     
     with state_lock:
         winner = state.get("winner")
