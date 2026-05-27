@@ -3,7 +3,6 @@ import troops as t
  
 # Spielzustand
 state_lock = threading.Lock()
-<<<<<<< HEAD
  
 troops_p1 = []   # Spieler 1 (Blau)
 troops_p2 = []   # Spieler 2 (Rot)
@@ -19,20 +18,6 @@ red_towers  = [t.SecTower(180, 140, 1),
                t.SecTower(410, 140, 1),
                t.MainTower(1)]
  
-=======
-
-troops_p1 = []   # Spieler 1 (Blau)
-troops_p2 = []   # Spieler 2 (Rot)
-
-blue_towers = [t.SecTower(180, 450, 0),
-               t.SecTower(410, 450, 0),
-               t.MainTower(0)]
-
-red_towers  = [t.SecTower(180, 140, 1),
-               t.SecTower(410, 140, 1),
-               t.MainTower(1)]
-
->>>>>>> 3aef356de8c83849447a9db492784c3b2be0dd57
 KLASSEN = {"Pekka": t.Pekka, "Ritter": t.Ritter, "HogRider": t.HogRider}
  
 def serialize(units):
@@ -55,11 +40,7 @@ def game_loop():
         with state_lock:
             troops_p1 = [t for t in troops_p1 if t.hp > 0]
             troops_p2 = [t for t in troops_p2 if t.hp > 0]
-<<<<<<< HEAD
            
-=======
-            
->>>>>>> 3aef356de8c83849447a9db492784c3b2be0dd57
             red_targets  = [t for t in red_towers  if t.hp > 0] + troops_p2
             blue_targets = [t for t in blue_towers if t.hp > 0] + troops_p1
  
@@ -67,15 +48,9 @@ def game_loop():
                 troop.next_Step(red_targets)
             for troop in troops_p2:
                 troop.next_Step(blue_targets)
-<<<<<<< HEAD
  
         time.sleep(1/60)
  
-=======
-
-        time.sleep(1/60)
-
->>>>>>> 3aef356de8c83849447a9db492784c3b2be0dd57
 #nested funktion
 def handle_client(komm, player_id):
     print(f"Spieler {player_id} verbunden")
@@ -95,24 +70,15 @@ def handle_client(komm, player_id):
                         if cmd["action"] == "spawn":
                             with state_lock:
                                 klasse = KLASSEN[cmd["type"]]
-<<<<<<< HEAD
                                 # müssen noch auf mehr truppen angepasst werden
                            
-=======
-                                # müssen noch auf mehr truppen angepasst werden 
-                            
->>>>>>> 3aef356de8c83849447a9db492784c3b2be0dd57
                                 if cmd["type"] == "Ritter":
                                     unit = t.Ritter(cmd["x"], cmd["y"], player_id)
                                 elif cmd["type"] == "HogRider":
                                     unit = t.HogRider(cmd["x"], cmd["y"], player_id)
                                 else:
                                     unit = t.Pekka_Server(cmd["x"], cmd["y"], player_id)
-<<<<<<< HEAD
                            
-=======
-                            
->>>>>>> 3aef356de8c83849447a9db492784c3b2be0dd57
                                 if player_id == 1:
                                     troops_p1.append(unit)
                                 else:
@@ -138,22 +104,13 @@ s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 s.bind(("", 50000))
 s.listen(2)
 print("Server läuft...")
-<<<<<<< HEAD
  
  
-=======
-
-
->>>>>>> 3aef356de8c83849447a9db492784c3b2be0dd57
 try:
     for player_id in range(1,3):
         komm, addr = s.accept()
         threading.Thread(target=handle_client,
                          args=(komm, player_id), daemon=True).start()
-<<<<<<< HEAD
        
-=======
-        
->>>>>>> 3aef356de8c83849447a9db492784c3b2be0dd57
 finally:
     s.close()
