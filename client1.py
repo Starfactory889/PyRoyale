@@ -21,7 +21,8 @@ PLAYER_ID = 1  # ← 1 oder 2 je nach Client
 
 # Spielzustand — nur Dicts, keine Klassen
 state = {"troops_p1": [], "troops_p2": [],
-         "blue_towers": [], "red_towers": []}
+         "blue_towers": [], "red_towers": [],"elixir_p1": 0,
+            "elixir_p2": 0}
 state_lock = threading.Lock()
 
 # Animationen pro Einheit speichern
@@ -95,7 +96,9 @@ while running:
                  spawn("Pekka", *event.pos)
 
     game_map.draw(screen)
-
+    
+    print(state["elixir_p1"])
+    
     with state_lock:
         # 1. Türme zeichnen
         for tower in state["blue_towers"] + state["red_towers"]:
