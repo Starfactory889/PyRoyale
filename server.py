@@ -85,7 +85,7 @@ def handle_client(komm, player_id):
                                 else:
                                     unit = t.Pekka(cmd["x"], cmd["y"], player_id)
                             
->>>>>>> 3aef356de8c83849447a9db492784c3b2be0dd57
+
                                 if player_id == 1:
                                     troops_p1.append(unit)
                                 else:
