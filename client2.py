@@ -46,20 +46,20 @@ def get_or_create_anim(unit):
 
 def draw_tower_flipped(screen, tower, image):
     fx, fy = flip((tower["x"], tower["y"]))
-    screen.blit(image, (fx - 30, fy - 30))
+    screen.blit(image, (fx - 70, fy - 70))
     
     ratio = max(tower["hp"] / tower["max_hp"], 0)
     
-    pygame.draw.rect(screen, (0,0,0),   (fx - 30, fy - 38, 60, 5))   # ← fx/fy statt tower["x"]/tower["y"]
-    pygame.draw.rect(screen, (0,255,0), (fx - 30, fy - 38, int(60*ratio), 5))
+    pygame.draw.rect(screen, (0,0,0),   (fx - 70, fy - 38, 60, 5))   # ← fx/fy statt tower["x"]/tower["y"]
+    pygame.draw.rect(screen, (0,255,0), (fx - 70, fy - 38, int(60*ratio), 5))
     
 
 
-def draw_unit_animated_flipped(unit):
+def draw_unit_animated_flipped(unit,dt):
     anim = get_or_create_anim(unit)
     anim.x, anim.y = flip((unit["x"], unit["y"]))
     anim.winkel = unit.get("winkel", 0) + 180 
-    anim.update()
+    anim.update(dt)
     anim.draw(screen)
 
 def spawn(troop_type, x, y):
@@ -92,7 +92,7 @@ threading.Thread(target=empfangen, daemon=True).start()
 # --- Hauptschleife ---
 running = True
 while running:
-    clock.tick(60)
+    dt = clock.tick(60) / 1000.0
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -115,12 +115,8 @@ while running:
         active_ids = [u["id"] for u in all_troops]
         
         for u in all_troops:
-            if u["owner"] == PLAYER_ID:
-                draw_unit_animated_flipped(u)
-            else:
-                # Feinde als gespiegelte Kreise
-                fx, fy = flip((u["x"], u["y"]))
-                pygame.draw.circle(screen, (255, 50, 50), (int(fx), int(fy)), 10)
+            draw_unit_animated_flipped(u,dt)
+                
         
         # Aufräumen alter Animationen (Memory Leak Schutz)
         animations = {uid: anim for uid, anim in animations.items() if uid in active_ids}

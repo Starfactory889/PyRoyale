@@ -14,13 +14,15 @@ class AnimatedEntity:
         size=(120, 120),
         walk_frames=12,
         spawn_frames=5
+        
     ):
 
         self.x, self.y = pos
 
         self.walk_animation = []
         self.spawn_animation = []
-
+        self.anim_speed = 12  # Frames pro Sekunde (war 0.18 pro Frame)
+        self.frame_timer = 0.0  # ← neu
         path = os.path.join(base_path, folder_name)
 
         # -----------------------------
@@ -65,7 +67,7 @@ class AnimatedEntity:
     # ---------------------------------
     # Update
     # ---------------------------------
-    def update(self):
+    def update(self,dt):
 
         self.index += self.anim_speed
 

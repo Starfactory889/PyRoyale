@@ -3,7 +3,7 @@ import troops as t
  
 # Spielzustand
 state_lock = threading.Lock()
-
+clients = [] 
 troops_p1 = []   # Spieler 1 (Blau)
 troops_p2 = []   # Spieler 2 (Rot)
 
@@ -39,10 +39,21 @@ def get_state():
             "blue_towers": serialize(blue_towers),
             "red_towers":  serialize(red_towers),
         }) + "\n"
- 
+        
+def broadcast(msg):
+    for komm in clients:
+        try:
+            komm.send(msg.encode())
+        except:
+            pass
+        
 def game_loop():
     global troops_p1, troops_p2
+    last_time = time.perf_counter()
     while True:
+        now = time.perf_counter()
+        dt = now - last_time
+        last_time = now
         with state_lock:
             troops_p1 = [t for t in troops_p1 if t.hp > 0]
             troops_p2 = [t for t in troops_p2 if t.hp > 0]
@@ -51,16 +62,29 @@ def game_loop():
             blue_targets = [t for t in blue_towers if t.hp > 0] + troops_p1
  
             for troop in troops_p1:
-                troop.next_Step(red_targets)
+                troop.next_Step(red_targets,dt)
             for troop in troops_p2:
-                troop.next_Step(blue_targets)
+                troop.next_Step(blue_targets,dt)
+        
+        winner = check_winner()
+        if winner:
+            broadcast(f'{{"winner": {winner}}}\n')
 
         time.sleep(1/60)
+        
+def check_winner():
+    for tower in blue_towers:
+        if isinstance(tower, t.MainTower) and tower.hp <= 0:
+            return 2  # Rot gewinnt
+    for tower in red_towers:
+        if isinstance(tower, t.MainTower) and tower.hp <= 0:
+            return 1  # Blau gewinnt
+    return None
 
 #nested funktion
 def handle_client(komm, player_id):
     print(f"Spieler {player_id} verbunden")
- 
+    clients.append(komm)
     def empfangen():
         puffer = ""
         while True:
@@ -85,7 +109,7 @@ def handle_client(komm, player_id):
                                 else:
                                     unit = t.Pekka(cmd["x"], cmd["y"], player_id)
                             
->>>>>>> 3aef356de8c83849447a9db492784c3b2be0dd57
+
                                 if player_id == 1:
                                     troops_p1.append(unit)
                                 else:
@@ -114,12 +138,12 @@ print("Server läuft...")
 
 
 try:
-    player_id = 1
-    while True:
-        komm, addr = s.accept()
-        threading.Thread(target=handle_client,
-                        args=(komm, player_id), daemon=True).start()
-        if player_id < 2:
-            player_id += 1        
+    komm1, addr1 = s.accept()
+    print(f"Spieler 1 verbunden: {addr1}")
+    threading.Thread(target=handle_client, args=(komm1, 1), daemon=True).start()
+
+    komm2, addr2 = s.accept()
+    print(f"Spieler 2 verbunden: {addr2}")
+    threading.Thread(target=handle_client, args=(komm2, 2), daemon=True).start()       
 finally:
     s.close()
