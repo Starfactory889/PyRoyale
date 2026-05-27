@@ -54,7 +54,7 @@ def get_state():
             "blue_towers": serialize(blue_towers),
             "red_towers":  serialize(red_towers),
             "elixir_p1": round(elixir_p1, 1),
-            "elixir_p2": round(elixir_p2, 1)
+            "elixir_p2": round(elixir_p2, 1),
             "winner": winner,
         }) + "\n"
         

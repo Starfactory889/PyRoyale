@@ -25,7 +25,7 @@ PLAYER_ID = 2
 state = {"troops_p1": [], "troops_p2": [],
          "blue_towers": [], "red_towers": [],
          "winner" : None,
-         ,"elixir_p1": 0,
+         "elixir_p1": 0,
             "elixir_p2": 0}
 state_lock = threading.Lock()
 animations = {}
