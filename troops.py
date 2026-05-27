@@ -2,16 +2,14 @@ import os
 from entity_animation import AnimatedEntity
 import math
 
-# =========================
-# BASE UNIT
-# =========================
+
 class Unit:
     next_id = 0
 
     def __init__(self, x, y, hp, damage, speed, range, elexir, owner):
         self.id = Unit.next_id
         Unit.next_id += 1
-
+        self.current_angle = 0
         self.x = x
         self.y = y
         self.hp = hp
@@ -53,6 +51,9 @@ class Unit:
         else:
             d,(dx,dy) = self.distance(enemy)
             x,y = self.move(d,dx,dy)
+            
+            self.current_angle = math.degrees(math.atan2(-dy, dx)) - 90
+            
             return x,y
             
             
@@ -81,46 +82,10 @@ class Unit:
         return screen
     '''
 
-# =========================
-# TROOPS
-# =========================
 class Pekka(Unit):
-
-    def __init__(self, x, y, owner, base_path):
-
+    """Pekka ohne Animation – nur für Serverlogik"""
+    def __init__(self, x, y, owner):
         super().__init__(x, y, 1000, 200, 2.5, 50, 6, owner)
-
-        self.animation = AnimatedEntity(
-            folder_name="drachen",
-            base_path=os.path.join(base_path, "assets"),
-
-            walk_prefix="drachen_m",
-            spawn_prefix="drachen_s",
-
-            pos=(x, y),
-
-            size=(40, 40),
-
-            walk_frames=12,
-            spawn_frames=5
-        )
-
-    def update(self,enemy):
-    # Winkel aus Bewegungsrichtung berechnen
-        if enemy is not None:
-            # Richtung zum Feind berechnen
-            dx = enemy.x - self.x
-            dy = enemy.y - self.y
-            winkel = math.degrees(math.atan2(-dy, dx))-90
-            self.animation.winkel = winkel
-            
-        print(f"winkel: {winkel}, animation.winkel: {self.animation.winkel}")
-        self.animation.x = int(self.x)
-        self.animation.y = int(self.y)
-        self.animation.update()
-
-    def draw(self, screen):
-        self.animation.draw(screen)
         
 
 class HogRider(Unit):
@@ -141,9 +106,7 @@ class Tower(Unit):
         
 
 
-# =========================
-# 👑 MAIN TOWER (KING TOWER)
-# =========================
+
 class MainTower(Tower):
     def __init__(self, owner):
         if owner == 1:
@@ -156,9 +119,6 @@ class MainTower(Tower):
         self.max_hp = 5000
 
 
-# =========================
-# 🏰 SIDE TOWERS
-# =========================
 class SecTower(Tower):
     def __init__(self, x, y, owner):
         super().__init__(x, y, owner)
