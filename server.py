@@ -4,6 +4,20 @@ import troops as t
 # Spielzustand
 state_lock = threading.Lock()
 clients = [] 
+
+#Elexir
+elixir_p1 = 5.0      # Startwert
+elixir_p2 = 5.0
+MAX_ELIXIR = 10.0
+ELIXIR_PER_SECOND = 2.0
+
+#Kosten der Truppen
+ELIXIR_COSTS = {
+    "Ritter": 3,
+    "HogRider": 4,
+    "Pekka": 7
+}
+
 troops_p1 = []   # Spieler 1 (Blau)
 troops_p2 = []   # Spieler 2 (Rot)
 winner  =None
@@ -39,18 +53,28 @@ def get_state():
             "troops_p2":   serialize(troops_p2),
             "blue_towers": serialize(blue_towers),
             "red_towers":  serialize(red_towers),
+            "elixir_p1": round(elixir_p1, 1),
+            "elixir_p2": round(elixir_p2, 1)
             "winner": winner,
         }) + "\n"
         
         
 def game_loop():
-    global troops_p1, troops_p2,winner
+    global troops_p1, troops_p2, elixir_p1, elixir_p2,winner
     last_time = time.perf_counter()
+
     while True:
         now = time.perf_counter()
         dt = now - last_time
         last_time = now
+
         with state_lock:
+
+            #Elexir erhöhen
+            elixir_p1 = min(MAX_ELIXIR, elixir_p1 + ELIXIR_PER_SECOND * dt)
+            elixir_p2 = min(MAX_ELIXIR, elixir_p2 + ELIXIR_PER_SECOND * dt)
+
+
             troops_p1 = [t for t in troops_p1 if t.hp > 0]
             troops_p2 = [t for t in troops_p2 if t.hp > 0]
             
@@ -80,9 +104,11 @@ def check_winner():
 
 #nested funktion
 def handle_client(komm, player_id):
+
     print(f"Spieler {player_id} verbunden")
     clients.append(komm)
     def empfangen():
+        global elixir_p1, elixir_p2
         puffer = ""
         while True:
             try:
@@ -97,14 +123,34 @@ def handle_client(komm, player_id):
                         if cmd["action"] == "spawn":
                             with state_lock:
                                 klasse = KLASSEN[cmd["type"]]
-                                # müssen noch auf mehr truppen angepasst werden 
-                            
-                                if cmd["type"] == "Ritter":
-                                    unit = t.Ritter(cmd["x"], cmd["y"], player_id)
-                                elif cmd["type"] == "HogRider":
-                                    unit = t.HogRider(cmd["x"], cmd["y"], player_id)
+
+                                # falls er die klasse nicht kennt kommt 999 zurück dadurch wird spawn unmöglich
+                                cost = ELIXIR_COSTS.get(cmd["type"], 999)
+
+                                # Elixir prüfen und abziehen
+                                if player_id == 1:
+                                    if elixir_p1 > cost:
+                                        if cmd["type"] == "Ritter":
+                                            unit = t.Ritter(cmd["x"], cmd["y"], player_id)
+                                        elif cmd["type"] == "HogRider":
+                                            unit = t.HogRider(cmd["x"], cmd["y"], player_id)
+                                        elif cmd["type"] == "Pekka":
+                                            unit = t.Pekka(cmd["x"], cmd["y"], player_id)
+                                        elixir_p1 -= cost
                                 else:
-                                    unit = t.Pekka(cmd["x"], cmd["y"], player_id)
+                                    if elixir_p2 > cost:
+                                        if cmd["type"] == "Ritter":
+                                            unit = t.Ritter(cmd["x"], cmd["y"], player_id)
+                                        elif cmd["type"] == "HogRider":
+                                            unit = t.HogRider(cmd["x"], cmd["y"], player_id)
+                                        elif cmd["type"] == "Pekka":
+                                            unit = t.Pekka(cmd["x"], cmd["y"], player_id)
+
+                                        elixir_p2 -= cost
+
+
+                                
+                                
                             
 
                                 if player_id == 1:
@@ -139,6 +185,7 @@ print("Server läuft...")
 
 
 
+
 try:
     player_id = 1
     while True:
@@ -146,6 +193,7 @@ try:
         threading.Thread(target=handle_client,
                         args=(komm, player_id), daemon=True).start()
         player_id += 1
-        
+       
 finally:
     s.close()
+ 

@@ -21,8 +21,8 @@ PLAYER_ID = 1  # ← 1 oder 2 je nach Client
 
 # Spielzustand — nur Dicts, keine Klassen
 state = {"troops_p1": [], "troops_p2": [],
-         "blue_towers": [], "red_towers": [],
-         "winner" : None,
+         "blue_towers": [], "red_towers": [],"elixir_p1": 0,
+            "elixir_p2": 0,"winner" : None,
          }
 state_lock = threading.Lock()
 
@@ -99,7 +99,9 @@ while running:
                  spawn("Pekka", *event.pos)
 
     game_map.draw(screen)
-
+    
+    print(state["elixir_p1"])
+    
     with state_lock:
         winner = state.get("winner")
     if winner:

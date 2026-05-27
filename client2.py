@@ -25,7 +25,8 @@ PLAYER_ID = 2
 state = {"troops_p1": [], "troops_p2": [],
          "blue_towers": [], "red_towers": [],
          "winner" : None,
-         }
+         ,"elixir_p1": 0,
+            "elixir_p2": 0}
 state_lock = threading.Lock()
 animations = {}
 
@@ -106,6 +107,10 @@ while running:
                 spawn("Pekka", real_x, real_y)
 
     game_map.draw(screen)
+
+    print(state["elixir_p2"])
+
+    print(state["elixir_p2"])
 
     
     with state_lock:
