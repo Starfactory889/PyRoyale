@@ -42,7 +42,7 @@ class Unit:
                 next_enemy = enemy
         return next_enemy, min_d
 
-    def next_Step(self, enemys: list):
+    def next_Step(self, enemys: list, dt: float):
         # Cooldown-Timer runterzählen
         if self._attack_timer > 0:
             self._attack_timer -= 1
@@ -56,14 +56,18 @@ class Unit:
                 self.attack(enemy)
                 self._attack_timer = self.attack_cooldown
         else:
-            d, (dx, dy) = self.distance(enemy)
-            self.move(d, dx, dy)
+            d,(dx,dy) = self.distance(enemy)
+            x,y = self.move(d,dx,dy,dt)
             self.current_angle = math.degrees(math.atan2(-dy, dx)) - 90
-
-    def move(self, d, dx, dy):
-        self.x = round(self.x + (dx / d) * self.speed, 2)
-        self.y = round(self.y + (dy / d) * self.speed, 2)
-        return self.x, self.y
+            return x,y
+            
+            
+            
+    def move(self,d,dx,dy,dt):
+        self.x = round(self.x + (dx / d) * self.speed * dt,2)
+        self.y = round(self.y + (dy / d) * self.speed * dt,2)
+        return self.x,self.y
+            
 
     def attack(self, enemy):
         if enemy.hp <= 0:
@@ -83,21 +87,21 @@ class Pekka(Unit):
     # hp=1000, dmg=200, speed=2.5, range=50, elexir=6
     # attack_cooldown=45 → ~1.3 Angriffe/Sek
     def __init__(self, x, y, owner):
-        super().__init__(x, y, 1000, 200, 2.5, 50, 6, owner, attack_cooldown=45)
+        super().__init__(x, y, 1000, 200, 150, 50, 6, owner, attack_cooldown=45)
 
 
 class HogRider(Unit):
     # hp=500, dmg=100, speed=1, range=3, elexir=3
     # attack_cooldown=50 → 1.2 Angriffe/Sek
     def __init__(self, x, y, owner):
-        super().__init__(x, y, 500, 100, 1, 3, 3, owner, attack_cooldown=50)
+        super().__init__(x, y, 500, 100, 60, 3, 3, owner, attack_cooldown=50)
 
 
 class Ritter(Unit):
     # hp=600, dmg=120, speed=0.8, range=2, elexir=4
     # attack_cooldown=55 → ~1.1 Angriffe/Sek
     def __init__(self, x, y, owner):
-        super().__init__(x, y, 600, 120, 0.8, 2, 4, owner, attack_cooldown=55)
+        super().__init__(x, y, 600, 120, 48, 2, 4, owner, attack_cooldown=55)
 
 class Drache(Unit):
     # hp=800, dmg=150, speed=3.5, range=120, elexir=4

@@ -2,9 +2,24 @@ import socket, threading, json, time
 import troops as t
 
 state_lock = threading.Lock()
+clients = [] 
 
-troops_p1 = []
-troops_p2 = []
+#Elexir
+elixir_p1 = 5.0      # Startwert
+elixir_p2 = 5.0
+MAX_ELIXIR = 10.0
+ELIXIR_PER_SECOND = 2.0
+
+#Kosten der Truppen
+ELIXIR_COSTS = {
+    "Ritter": 3,
+    "HogRider": 4,
+    "Pekka": 7
+}
+
+troops_p1 = []   # Spieler 1 (Blau)
+troops_p2 = []   # Spieler 2 (Rot)
+winner  =None
 
 blue_towers = [
     t.SecTower(180, 450, 0),
@@ -48,59 +63,116 @@ def get_state():
             "troops_p2":   serialize(troops_p2),
             "blue_towers": serialize(blue_towers),
             "red_towers":  serialize(red_towers),
+            "elixir_p1": round(elixir_p1, 1),
+            "elixir_p2": round(elixir_p2, 1),
+            "winner": winner,
         }) + "\n"
-
+        
+        
 def game_loop():
-    global troops_p1, troops_p2
+    global troops_p1, troops_p2, elixir_p1, elixir_p2,winner
+    last_time = time.perf_counter()
 
     while True:
+        now = time.perf_counter()
+        dt = now - last_time
+        last_time = now
+
         with state_lock:
-            # Variable `u` statt `t` verwenden – kein Shadowing des Modul-Alias
-            troops_p1 = [u for u in troops_p1 if u.hp > 0]
-            troops_p2 = [u for u in troops_p2 if u.hp > 0]
 
-            red_targets  = red_towers  + troops_p2
-            blue_targets = blue_towers + troops_p1
+            #Elexir erhöhen
+            elixir_p1 = min(MAX_ELIXIR, elixir_p1 + ELIXIR_PER_SECOND * dt)
+            elixir_p2 = min(MAX_ELIXIR, elixir_p2 + ELIXIR_PER_SECOND * dt)
 
-            for unit in troops_p1:
-                unit.next_Step(red_targets)
 
-            for unit in troops_p2:
-                unit.next_Step(blue_targets)
+            troops_p1 = [troop for troop in troops_p1 if troop.hp > 0]
+            troops_p2 = [troop for troop in troops_p2 if troop.hp > 0]
+            
+            red_targets  = [troop for troop in red_towers  if troop.hp > 0] + troops_p2
+            blue_targets = [troop for troop in blue_towers if troop.hp > 0] + troops_p1
+ 
+            for troop in troops_p1:
+                troop.next_Step(red_targets,dt)
+            for troop in troops_p2:
+                troop.next_Step(blue_targets,dt)
 
-        time.sleep(1 / 60)
+            
+            if winner is None:
+                winner = check_winner()
+        time.sleep(1/60)
+        
+def check_winner():
+    for tower in blue_towers:
+        if isinstance(tower, t.MainTower) and tower.hp <= 0:
+            return 2  # Rot gewinnt
+        
+    for tower in red_towers:
+        if isinstance(tower, t.MainTower) and tower.hp <= 0:
+            return 1  # Blau gewinnt
+        
+    return None
 
-def handle_client(conn, player_id):
+#nested funktion
+def handle_client(komm, player_id):
 
+    print(f"Spieler {player_id} verbunden")
+    clients.append(komm)
     def recv():
-        buffer = ""
+        global elixir_p1, elixir_p2
+        puffer = ""
         while True:
             try:
                 data = conn.recv(1024).decode()
                 if not data:
                     break
+                puffer += data  # wird nicht genutzt aber bleibt
+                while "\n" in puffer:
+                    msg, puffer = puffer.split("\n", 1)
+                    if msg:
+                        cmd = json.loads(msg)
+                        if cmd["action"] == "spawn":
+                            klass = KLASSEN.get(cmd["type"])
+                            if klass is None:
+                                continue
+                            unit = klass(cmd["x"], cmd["y"], player_id)
+                            with state_lock:
+                                klasse = KLASSEN[cmd["type"]]
 
-                buffer += data
+                                # falls er die klasse nicht kennt kommt 999 zurück dadurch wird spawn unmöglich
+                                cost = ELIXIR_COSTS.get(cmd["type"], 999)
 
-                while "\n" in buffer:
-                    msg, buffer = buffer.split("\n", 1)
-                    cmd = json.loads(msg)
-
-                    if cmd["action"] == "spawn":
-                        klass = KLASSEN.get(cmd["type"])
-                        if klass is None:
-                            continue
-                        unit = klass(cmd["x"], cmd["y"], player_id)
-
-                        with state_lock:
-                            if player_id == 1:
-                                troops_p1.append(unit)
-                            else:
-                                troops_p2.append(unit)
-            except Exception:
+                                # Elixir prüfen und abziehen
+                                if player_id == 1:
+                                    if elixir_p1 > cost:
+                                        if cmd["type"] == "Ritter":
+                                            unit = t.Ritter(cmd["x"], cmd["y"], player_id)
+                                        elif cmd["type"] == "HogRider":
+                                            unit = t.HogRider(cmd["x"], cmd["y"], player_id)
+                                        elif cmd["type"] == "Pekka":
+                                            unit = t.Pekka(cmd["x"], cmd["y"], player_id)
+                                            
+                                        troops_p1.append(unit)
+                                        elixir_p1 -= cost
+                                else:
+                                    if elixir_p2 > cost:
+                                        if cmd["type"] == "Ritter":
+                                            unit = t.Ritter(cmd["x"], cmd["y"], player_id)
+                                        elif cmd["type"] == "HogRider":
+                                            unit = t.HogRider(cmd["x"], cmd["y"], player_id)
+                                        elif cmd["type"] == "Pekka":
+                                            unit = t.Pekka(cmd["x"], cmd["y"], player_id)
+                                            
+                                        troops_p2.append(unit)
+                                        elixir_p2 -= cost
+                            
+                                    
+            except Exception as e:
+                print(f"Server empfangen Fehler (Spieler {player_id}): {e}")  # ← echter Fehler
+                import traceback
+                traceback.print_exc()
                 break
 
-    def send():
+    def conn():
         while True:
             try:
                 conn.send(get_state().encode())
@@ -109,7 +181,7 @@ def handle_client(conn, player_id):
                 break
 
     threading.Thread(target=recv, daemon=True).start()
-    threading.Thread(target=send, daemon=True).start()
+    threading.Thread(target=conn, daemon=True).start()
 
 threading.Thread(target=game_loop, daemon=True).start()
 
@@ -120,9 +192,16 @@ srv.listen(2)
 
 print("Server läuft auf Port 50000 – warte auf 2 Spieler...")
 
-player_id = 1
-while True:
-    conn, addr = srv.accept()
-    print(f"Spieler {player_id} verbunden von {addr}")
-    threading.Thread(target=handle_client, args=(conn, player_id), daemon=True).start()
-    player_id = 2 if player_id == 1 else 1
+
+
+try:
+    player_id = 1
+    while True:
+        komm, addr = srv.accept()
+        threading.Thread(target=handle_client,
+                        args=(komm, player_id), daemon=True).start()
+        player_id += 1
+       
+finally:
+    srv.close()
+ 

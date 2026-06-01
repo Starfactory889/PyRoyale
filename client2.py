@@ -15,8 +15,12 @@ game_map = GameMap(os.path.join(BASE_DIR, "assets", "map.png"), (WIDTH, HEIGHT))
 
 PLAYER_ID = 2
 
-state = {"troops_p1": [], "troops_p2": [], "blue_towers": [], "red_towers": []}
-lock = threading.Lock()
+state = {"troops_p1": [], "troops_p2": [],
+         "blue_towers": [], "red_towers": [],
+         "winner" : None,
+         "elixir_p1": 0,
+            "elixir_p2": 0}
+sate_lock = threading.Lock()
 
 deck = ["Pekka", "Ritter", "HogRider", "Drache"]
 selected_card = 0
@@ -152,8 +156,7 @@ threading.Thread(target=recv, daemon=True).start()
 
 running = True
 while running:
-    clock.tick(60)
-
+    dt = clock.tick(60) / 1000.0
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -169,6 +172,19 @@ while running:
 
     game_map.draw(screen)
 
+    print(state["elixir_p2"])
+
+    
+    with state_lock:
+        winner = state.get("winner")
+    if winner:
+        screen.fill((0, 0, 0))
+        font = pygame.font.SysFont(None, 80)
+        text = font.render(f"Spieler {winner} gewinnt!", True, (255, 255, 0))
+        screen.blit(text, (WIDTH//2 - text.get_width()//2, HEIGHT//2))
+        pygame.display.flip()
+        pygame.time.wait(3000)
+        break 
     with lock:
         for tower in state.get("blue_towers", []):
             tx, ty = flip((tower["x"], tower["y"]))
@@ -187,6 +203,7 @@ while running:
             else:
                 pygame.draw.circle(screen, (255, 60, 60), (int(sx), int(sy)), 10)
             draw_hp_bar(screen, int(sx), int(sy), u["hp"], u["max_hp"])
+            draw_unit_animated_flipped(u,dt)
 
     draw_bar()
     pygame.display.flip()
