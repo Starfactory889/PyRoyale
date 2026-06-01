@@ -120,10 +120,8 @@ class Tower(Unit):
 
 class MainTower(Tower):
     def __init__(self, owner):
-        x, y = (295, 100) if owner == 1 else (295, 490)
+        x, y = (295, 120) if owner == 1 else (295, 520)  # weiter an den Rand
         super().__init__(x, y, owner)
-        self.hp = 5000
-        self.max_hp = 5000
 
 
 class SecTower(Tower):

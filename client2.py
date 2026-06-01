@@ -20,7 +20,7 @@ state = {"troops_p1": [], "troops_p2": [],
          "winner" : None,
          "elixir_p1": 0,
             "elixir_p2": 0}
-sate_lock = threading.Lock()
+state_lock = threading.Lock()
 
 deck = ["Pekka", "Ritter", "HogRider", "Drache"]
 selected_card = 0
@@ -133,21 +133,21 @@ s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect(("127.0.0.1", 50000))
 
 def recv():
-    buf = ""
+    puffer = ""
     while True:
         try:
             data = s.recv(4096).decode()
             if not data:
                 break
-            buf += data
-            while "\n" in buf:
-                msg, buf = buf.split("\n", 1)
-                with lock:
+            puffer += data
+            while "\n" in puffer:
+                msg, puffer = puffer.split("\n", 1)
+                with state_lock:
                     state.update(json.loads(msg))
         except Exception:
             break
     # Verbindung weg → alles leeren
-    with lock:
+    with state_lock:
         state["troops_p1"].clear()
         state["troops_p2"].clear()
     animations.clear()
@@ -185,25 +185,22 @@ while running:
         pygame.display.flip()
         pygame.time.wait(3000)
         break 
-    with lock:
-        for tower in state.get("blue_towers", []):
-            tx, ty = flip((tower["x"], tower["y"]))
-            draw_tower(screen, tower, tower_img_blue, tx, ty)
+    with state_lock:
         for tower in state.get("red_towers", []):
             tx, ty = flip((tower["x"], tower["y"]))
             draw_tower(screen, tower, tower_img_red, tx, ty)
 
+        for tower in state.get("blue_towers", []):
+            tx, ty = flip((tower["x"], tower["y"]))
+            draw_tower(screen, tower, tower_img_blue, tx, ty)
+
         for u in state["troops_p1"] + state["troops_p2"]:
             sx, sy = flip((u["x"], u["y"]))
-            if u["owner"] == PLAYER_ID:
-                anim = get_anim(u)
-                anim.x, anim.y = sx, sy
-                anim.update()
-                anim.draw(screen)
-            else:
-                pygame.draw.circle(screen, (255, 60, 60), (int(sx), int(sy)), 10)
+            anim = get_anim(u)
+            anim.x, anim.y = sx, sy
+            anim.update(dt)
+            anim.draw(screen)
             draw_hp_bar(screen, int(sx), int(sy), u["hp"], u["max_hp"])
-            draw_unit_animated_flipped(u,dt)
 
     draw_bar()
     pygame.display.flip()

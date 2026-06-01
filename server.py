@@ -21,16 +21,18 @@ troops_p1 = []   # Spieler 1 (Blau)
 troops_p2 = []   # Spieler 2 (Rot)
 winner  =None
 
+# server.py
+
 blue_towers = [
-    t.SecTower(180, 450, 0),
-    t.SecTower(410, 450, 0),
-    t.MainTower(0)
+    t.SecTower(180, 490, 0),   # links
+    t.SecTower(410, 490, 0),   # rechts
+    t.MainTower(0)              # mitte, weiter unten
 ]
 
 red_towers = [
-    t.SecTower(180, 140, 1),
-    t.SecTower(410, 140, 1),
-    t.MainTower(1)
+    t.SecTower(180, 160, 1),   # links
+    t.SecTower(410, 160, 1),   # rechts
+    t.MainTower(1)              # mitte, weiter oben
 ]
 
 KLASSEN = {
@@ -113,11 +115,11 @@ def check_winner():
     return None
 
 #nested funktion
-def handle_client(komm, player_id):
+def handle_client(conn, player_id):
 
     print(f"Spieler {player_id} verbunden")
-    clients.append(komm)
-    def recv():
+    clients.append(conn)
+    def empfangen():
         global elixir_p1, elixir_p2
         puffer = ""
         while True:
@@ -172,7 +174,7 @@ def handle_client(komm, player_id):
                 traceback.print_exc()
                 break
 
-    def conn():
+    def senden():
         while True:
             try:
                 conn.send(get_state().encode())
@@ -180,8 +182,8 @@ def handle_client(komm, player_id):
             except Exception:
                 break
 
-    threading.Thread(target=recv, daemon=True).start()
-    threading.Thread(target=conn, daemon=True).start()
+    threading.Thread(target=empfangen, daemon=True).start()
+    threading.Thread(target=senden, daemon=True).start()
 
 threading.Thread(target=game_loop, daemon=True).start()
 
