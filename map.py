@@ -7,12 +7,12 @@ class GameMap:
 
         self.allowed_areas = [
             pygame.Rect(140, 100, 380, 450)
-            #pygame.Rect(360, 200, 160, 250)
+            
         ]
 
         self.blocked_areas = [
             #pygame.Rect(200, 150, 80, 120),
-            #pygame.Rect(350, 300, 100, 100)
+            
         ]
 
     def draw(self, screen):

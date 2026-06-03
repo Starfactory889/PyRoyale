@@ -4,11 +4,12 @@ import troops as t
 state_lock = threading.Lock()
 clients = [] 
 
+
 #Elexir
-elixir_p1 = 5.0      # Startwert
-elixir_p2 = 5.0
+elixir_p1 = 10.0      # Startwert
+elixir_p2 = 10.0
 MAX_ELIXIR = 10.0
-ELIXIR_PER_SECOND = 2.0
+ELIXIR_PER_SECOND = 1.0
 
 #Kosten der Truppen
 ELIXIR_COSTS = {
@@ -25,15 +26,15 @@ winner  =None
 # server.py
 
 blue_towers = [
-    t.SecTower(180, 490, 0),   # links
-    t.SecTower(410, 490, 0),   # rechts
-    t.MainTower(0)              # mitte, weiter unten
+    t.SecTower(420, 476, 0),   # links
+    t.SecTower(220, 476, 0),   # rechts
+    t.MainTower(320, 536, 0)              # mitte, weiter unten
 ]
 
 red_towers = [
-    t.SecTower(180, 160, 1),   # links
-    t.SecTower(410, 160, 1),   # rechts
-    t.MainTower(1)              # mitte, weiter oben
+    t.SecTower(220, 196, 1),   # links
+    t.SecTower(420, 196, 1),   # rechts
+    t.MainTower(320, 136, 1)              # mitte, weiter oben
 ]
 
 KLASSEN = {
@@ -87,7 +88,6 @@ def game_loop():
             elixir_p1 = min(MAX_ELIXIR, elixir_p1 + ELIXIR_PER_SECOND * dt)
             elixir_p2 = min(MAX_ELIXIR, elixir_p2 + ELIXIR_PER_SECOND * dt)
 
-
             troops_p1 = [troop for troop in troops_p1 if troop.hp > 0]
             troops_p2 = [troop for troop in troops_p2 if troop.hp > 0]
             
@@ -99,6 +99,10 @@ def game_loop():
             for troop in troops_p2:
                 troop.next_Step(blue_targets,dt)
 
+            for tower in blue_towers:
+                tower.next_Step(troops_p2, dt)
+            for tower in red_towers:
+                tower.next_Step(troops_p1, dt)
             
             if winner is None:
                 winner = check_winner()
@@ -204,6 +208,9 @@ try:
         threading.Thread(target=handle_client,
                         args=(komm, player_id), daemon=True).start()
         player_id += 1
+        
+except Exception as e:
+        print("Spiel beendet")
        
 finally:
     srv.close()

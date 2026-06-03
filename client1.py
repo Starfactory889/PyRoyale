@@ -1,7 +1,7 @@
 import pygame, socket, threading, json, os
 from map import GameMap
 from entity_animation import AnimatedEntity
-from troops import Pekka, Ritter, HogRider
+
 
 pygame.init()
 
@@ -10,7 +10,7 @@ WIDTH, HEIGHT = 640, 673
 
 state_lock = threading.Lock()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Clash Mini – Spieler 2")
+pygame.display.set_caption("Clash Mini – Spieler 1")
 clock = pygame.time.Clock()
 
 
@@ -49,6 +49,19 @@ win_images = {
            (WIDTH, HEIGHT)),
 }
 
+win_images = {
+    1: pygame.transform.scale(
+           pygame.image.load(os.path.join(BASE_DIR, "assets", "spieler1_win.png")),
+           (WIDTH, HEIGHT)),
+    2: pygame.transform.scale(
+           pygame.image.load(os.path.join(BASE_DIR, "assets", "spieler2_win.png")),
+           (WIDTH, HEIGHT)),
+}
+
+# Elixir Bild laden:
+elixir_img = pygame.image.load(os.path.join(BASE_DIR, "assets", "elixir_drop.png"))
+elixir_img = pygame.transform.scale(elixir_img, (24, 24))
+
 card_images = []
 for name in deck:
     path = os.path.join(BASE_DIR, "assets", "cards", f"{name.lower()}_card.png")
@@ -84,6 +97,7 @@ def draw_unit_animated(unit,dt): # 'targets' wird nicht mehr benötigt!
     anim.winkel = unit.get("winkel", 0) 
     anim.update(dt)
     anim.draw(screen)
+    draw_hp_bar(screen, int(unit["x"]), int(unit["y"]), unit["hp"], unit["max_hp"])
 
     
 
@@ -144,10 +158,6 @@ def draw_bar():
         is_selected = (i == selected_card)
 
         
-        if is_selected:
-            screen.blit(card_images[i], (cx-10, cy - 13))  # ← 10px nach oben, Zahl anpassen
-        else:
-            screen.blit(card_images[i], (cx-10, cy))
         if card_images[i]:
             if is_selected:
                 screen.blit(card_images[i], (cx-10, cy - 13))
@@ -156,6 +166,22 @@ def draw_bar():
         else:
             label = font_big.render(name[:3], True, (220, 220, 220) if not is_selected else (40, 40, 40))
             screen.blit(label, (cx + slot_w // 2 - label.get_width() // 2, cy + slot_h // 2 - label.get_height() // 2))
+    
+    #Elixier anzeige        
+    ziel_hoehe = 80  # ← hier anpassen
+    ziel_breite = 150
+    elixir_img_big = pygame.transform.scale(elixir_img, (ziel_breite, ziel_hoehe))
+    ex = bar_x + 350
+    ey = bar_y - 55
+    screen.blit(elixir_img_big, (ex, ey))
+    
+    font_elixir = pygame.font.SysFont(None, 36)
+    elixir = state.get("elixir_p1") if PLAYER_ID == 1 else state.get("elixir_p2")
+    elixir_text = font_elixir.render(f"{int(elixir)}", True, (255, 255, 255))
+    tx = ex + ziel_breite // 2 - elixir_text.get_width() // 2
+    ty = ey + ziel_hoehe // 2 - elixir_text.get_height() // 2
+    screen.blit(elixir_text, (tx, ty+10))
+    
 # Network
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect(("127.0.0.1", 50000))
@@ -225,12 +251,9 @@ while running:
             draw_tower(screen, tower, tower_img_red, tower_img_red_dead, tower["x"], tower["y"])
 
         for u in state["troops_p1"] + state["troops_p2"]:
-            anim = get_anim(u)
-            anim.x, anim.y = u["x"], u["y"]
-            anim.update(dt)
-            anim.draw(screen) 
-            draw_hp_bar(screen, int(u["x"]), int(u["y"]), u["hp"], u["max_hp"])
-
+            draw_unit_animated(u, dt)
+            
+            
     draw_bar()
     pygame.display.flip()
 

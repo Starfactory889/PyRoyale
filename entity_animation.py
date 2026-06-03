@@ -40,9 +40,7 @@ class AnimatedEntity:
 
             self.walk_animation.append(img)
 
-        # -----------------------------
-        # SPAWN Animation laden
-        # -----------------------------
+      
         for i in range(1, spawn_frames + 1):
 
             img_path = os.path.join(

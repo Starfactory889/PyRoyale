@@ -55,7 +55,8 @@ class Unit:
             if self._attack_timer == 0:
                 self.attack(enemy)
                 self._attack_timer = self.attack_cooldown
-        else:
+                
+        elif not isinstance(self, Tower):
             d,(dx,dy) = self.distance(enemy)
             x,y = self.move(d,dx,dy,dt)
             self.current_angle = math.degrees(math.atan2(-dy, dx)) - 90
@@ -84,44 +85,44 @@ class Unit:
 # ── Truppen ────────────────────────────────────────────────────────────────────
 
 class Pekka(Unit):
-    # hp=1000, dmg=200, speed=40, range=50, elexir=6
-    # attack_cooldown=45 → ~1.3 Angriffe/Sek
+    # 7 Elixir — stärkste Einheit, langsamer Tank mit hohem Schaden
+    # Sehr viel HP, sehr hoher Schaden, langsam
     def __init__(self, x, y, owner):
-        super().__init__(x, y, 1000, 200, 40, 50, 6, owner, attack_cooldown=45)
+        super().__init__(x, y, 2000, 250, 25, 15, 7, owner, attack_cooldown=40)
 
 
 class HogRider(Unit):
     # hp=500, dmg=100, speed=70, range=3, elexir=3
     # attack_cooldown=50 → 1.2 Angriffe/Sek
     def __init__(self, x, y, owner):
-        super().__init__(x, y, 500, 70, 60, 3, 3, owner, attack_cooldown=50)
-
+        super().__init__(x, y, 600, 110,70, 15, 4, owner, attack_cooldown=45)
 
 class Ritter(Unit):
-    # hp=600, dmg=120, speed=48, range=2, elexir=4
-    # attack_cooldown=55 → ~1.1 Angriffe/Sek
+    # 3 Elixir — günstiger Tank
+    # Viel HP, wenig Schaden, langsam
     def __init__(self, x, y, owner):
-        super().__init__(x, y, 600, 120, 48, 2, 4, owner, attack_cooldown=55)
+        super().__init__(x, y, 800, 80, 40, 15, 3, owner, attack_cooldown=60)
 
 class Drache(Unit):
-    # hp=800, dmg=150, speed=60, range=120, elexir=4
-    # Fliegende Einheit — großer Reichweite (Fernkämpfer)
-    # attack_cooldown=40 → ~1.5 Angriffe/Sek
+    # 4 Elixir — Fernkämpfer
+    # Wenig HP, hoher Schaden, große Reichweite
     def __init__(self, x, y, owner, base_path=None):
-        super().__init__(x, y, 800, 150, 60, 120, 4, owner, attack_cooldown=40)
+        super().__init__(x, y, 500, 140, 55, 75, 4, owner, attack_cooldown=50)
 # ── Türme ─────────────────────────────────────────────────────────────────────
 
 class Tower(Unit):
     # Türme stehen still (speed=0), greifen aber an
     # attack_cooldown=90 → 1 Angriff alle 1.5 Sek
     def __init__(self, x, y, owner):
-        super().__init__(x, y, 2000, 100, 0, 200, 0, owner, attack_cooldown=90)
+        super().__init__(x, y, 2000, 50, 0, 200, 0, owner, attack_cooldown=90)
 
 
 class MainTower(Tower):
-    def __init__(self, owner):
-        x, y = (295, 120) if owner == 1 else (295, 520)  # weiter an den Rand
+    def __init__(self,x,y, owner):
+        #x, y = (295, 120) if owner == 1 else (320, 520)  weiter an den Rand
         super().__init__(x, y, owner)
+        self.hp = 4000
+        self.max_hp = 4000
 
 
 class SecTower(Tower):
