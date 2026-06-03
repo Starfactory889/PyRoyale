@@ -61,6 +61,7 @@ win_images = {
 # Elixir Bild laden:
 elixir_img = pygame.image.load(os.path.join(BASE_DIR, "assets", "elixir_drop.png"))
 elixir_img = pygame.transform.scale(elixir_img, (24, 24))
+
 card_images = []
 for name in deck:
     path = os.path.join(BASE_DIR, "assets", "cards", f"{name.lower()}_card.png")
