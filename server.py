@@ -13,9 +13,10 @@ ELIXIR_PER_SECOND = 1.0
 
 #Kosten der Truppen
 ELIXIR_COSTS = {
-    "Ritter": 3,
+    "Ritter":   3,
     "HogRider": 4,
-    "Pekka": 7
+    "Pekka":    7,
+    "Drache":   4,  
 }
 
 troops_p1 = []   # Spieler 1 (Blau)

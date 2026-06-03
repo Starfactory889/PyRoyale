@@ -23,20 +23,41 @@ state = {"troops_p1": [], "troops_p2": [],
 state_lock = threading.Lock()
 
 deck = ["Pekka", "Ritter", "HogRider", "Drache"]
+#               ↑ Index 1 = Taste 2
 selected_card = 0
 
 ANIM_MAP = {
     "Pekka":    ("pekka",   "pekka_m",   "pekka_s"),
-    "HogRider": ("hogrider", "hogrider_m", "hogrider_s"),  # eigene Assets wenn vorhanden
-    "Drache":   ("drachen", "drachen_m", "drachen_s"),     # ← korrekter Eintrag
+    "Ritter":   ("ritter",  "ritter_m",  "ritter_s"),  # ← neu
+    "HogRider": ("hogrider", "hogrider_m", "hogrider_s"),
+    "Drache":   ("drachen", "drachen_m", "drachen_s"),
 }
 
 slot_img = pygame.image.load(os.path.join(BASE_DIR, "assets", "Kartenslots.png"))
 slot_img = pygame.transform.scale(slot_img, (320, 170))
 
+win_images = {
+    1: pygame.transform.scale(
+           pygame.image.load(os.path.join(BASE_DIR, "assets", "spieler1_win.png")),
+           (WIDTH, HEIGHT)),
+    2: pygame.transform.scale(
+           pygame.image.load(os.path.join(BASE_DIR, "assets", "spieler2_win.png")),
+           (WIDTH, HEIGHT)),
+}
+
+win_images = {
+    1: pygame.transform.scale(
+           pygame.image.load(os.path.join(BASE_DIR, "assets", "spieler1_win.png")),
+           (WIDTH, HEIGHT)),
+    2: pygame.transform.scale(
+           pygame.image.load(os.path.join(BASE_DIR, "assets", "spieler2_win.png")),
+           (WIDTH, HEIGHT)),
+}
+
 # Elixir Bild laden:
 elixir_img = pygame.image.load(os.path.join(BASE_DIR, "assets", "elixir_drop.png"))
 elixir_img = pygame.transform.scale(elixir_img, (24, 24))
+
 card_images = []
 for name in deck:
     path = os.path.join(BASE_DIR, "assets", "cards", f"{name.lower()}_card.png")
@@ -47,15 +68,17 @@ for name in deck:
     else:
         card_images.append(None)
 
-def load_tower_img(color, size=(48, 48)):
-    path = os.path.join(BASE_DIR, "assets", "türme", f"turm_{color}_1.png")
+def load_tower_img(filename, size=(48, 48)):
+    path = os.path.join(BASE_DIR, "assets", "türme", f"{filename}.png")
     if os.path.exists(path):
         img = pygame.image.load(path)
         return pygame.transform.scale(img, size)
     return None
 
-tower_img_blue = load_tower_img("blau")
-tower_img_red  = load_tower_img("rot")
+tower_img_blue      = load_tower_img("turm_blau_1")
+tower_img_red       = load_tower_img("turm_rot_1")
+tower_img_blue_dead = load_tower_img("turm_blau_2")
+tower_img_red_dead  = load_tower_img("turm_rot_2")
 
 animations = {}
 
@@ -99,12 +122,13 @@ def draw_hp_bar(screen, cx, cy, hp, max_hp, w=32, offset_y=20):
     pygame.draw.rect(screen, (40, 40, 40), (bx, by, w, 4))
     pygame.draw.rect(screen, (60, 200, 80), (bx, by, int(w * ratio), 4))
 
-def draw_tower(screen, tower, img, cx, cy):
+def draw_tower(screen, tower, img, img_dead, cx, cy):
     size = 48
-    if img:
-        screen.blit(img, (cx - size // 2, cy - size // 2))
+    use_img = img_dead if tower["hp"] <= 0 else img
+    if use_img:
+        screen.blit(use_img, (cx - size // 2, cy - size // 2))
     else:
-        color = (255, 60, 60) if tower.get("owner", 0) == 1 else (50, 100, 255)
+        color = (50, 100, 255) if tower.get("owner", 0) == 0 else (255, 60, 60)
         pygame.draw.rect(screen, color, (cx - 16, cy - 16, 32, 32), border_radius=4)
     draw_hp_bar(screen, cx, cy, tower["hp"], tower["max_hp"], w=48, offset_y=28)
 
@@ -206,21 +230,19 @@ while running:
     with state_lock:
         winner = state.get("winner")
     if winner:
-        screen.fill((0, 0, 0))
-        font = pygame.font.SysFont(None, 80)
-        text = font.render(f"Spieler {winner} gewinnt!", True, (255, 255, 0))
-        screen.blit(text, (WIDTH//2 - text.get_width()//2, HEIGHT//2))
+        screen.blit(win_images[winner], (0, 0))
         pygame.display.flip()
         pygame.time.wait(10000)
-        break 
+        break
     with state_lock:
+        # client2.py
         for tower in state.get("red_towers", []):
             tx, ty = flip((tower["x"], tower["y"]))
-            draw_tower(screen, tower, tower_img_blue, tx, ty)
+            draw_tower(screen, tower, tower_img_red, tower_img_red_dead, tx, ty)
 
         for tower in state.get("blue_towers", []):
             tx, ty = flip((tower["x"], tower["y"]))
-            draw_tower(screen, tower, tower_img_red, tx, ty)
+            draw_tower(screen, tower, tower_img_blue, tower_img_blue_dead, tx, ty)
 
         for u in state["troops_p1"] + state["troops_p2"]:
             draw_unit_animated_flipped(u, dt)
