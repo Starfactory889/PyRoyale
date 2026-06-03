@@ -120,8 +120,8 @@ class Tower(Unit):
 
 
 class MainTower(Tower):
-    def __init__(self, owner):
-        x, y = (295, 120) if owner == 1 else (295, 520)  # weiter an den Rand
+    def __init__(self,x,y, owner):
+        #x, y = (295, 120) if owner == 1 else (320, 520)  weiter an den Rand
         super().__init__(x, y, owner)
 
 

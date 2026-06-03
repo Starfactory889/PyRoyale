@@ -26,15 +26,15 @@ winner  =None
 # server.py
 
 blue_towers = [
-    t.SecTower(180, 490, 0),   # links
-    t.SecTower(410, 490, 0),   # rechts
-    t.MainTower(0)              # mitte, weiter unten
+    t.SecTower(420, 476, 0),   # links
+    t.SecTower(220, 476, 0),   # rechts
+    t.MainTower(320, 536, 0)              # mitte, weiter unten
 ]
 
 red_towers = [
-    t.SecTower(180, 160, 1),   # links
-    t.SecTower(410, 160, 1),   # rechts
-    t.MainTower(1)              # mitte, weiter oben
+    t.SecTower(220, 196, 1),   # links
+    t.SecTower(420, 196, 1),   # rechts
+    t.MainTower(320, 136, 1)              # mitte, weiter oben
 ]
 
 KLASSEN = {

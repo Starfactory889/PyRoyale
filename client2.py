@@ -238,11 +238,12 @@ while running:
         # client2.py
         for tower in state.get("red_towers", []):
             tx, ty = flip((tower["x"], tower["y"]))
-            draw_tower(screen, tower, tower_img_red, tower_img_red_dead, tx, ty)
+            draw_tower(screen, tower, tower_img_blue, tower_img_blue_dead, tx, ty)
+            
 
         for tower in state.get("blue_towers", []):
             tx, ty = flip((tower["x"], tower["y"]))
-            draw_tower(screen, tower, tower_img_blue, tower_img_blue_dead, tx, ty)
+            draw_tower(screen, tower, tower_img_red, tower_img_red_dead, tx, ty)
 
         for u in state["troops_p1"] + state["troops_p2"]:
             draw_unit_animated_flipped(u, dt)

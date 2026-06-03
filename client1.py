@@ -1,7 +1,7 @@
 import pygame, socket, threading, json, os
 from map import GameMap
 from entity_animation import AnimatedEntity
-from troops import Pekka, Ritter, HogRider
+
 
 pygame.init()
 
