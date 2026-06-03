@@ -55,7 +55,8 @@ class Unit:
             if self._attack_timer == 0:
                 self.attack(enemy)
                 self._attack_timer = self.attack_cooldown
-        else:
+                
+        elif not isinstance(self, Tower):
             d,(dx,dy) = self.distance(enemy)
             x,y = self.move(d,dx,dy,dt)
             self.current_angle = math.degrees(math.atan2(-dy, dx)) - 90

@@ -34,6 +34,9 @@ ANIM_MAP = {
 slot_img = pygame.image.load(os.path.join(BASE_DIR, "assets", "Kartenslots.png"))
 slot_img = pygame.transform.scale(slot_img, (320, 170))
 
+# Elixir Bild laden:
+elixir_img = pygame.image.load(os.path.join(BASE_DIR, "assets", "elixir_drop.png"))
+elixir_img = pygame.transform.scale(elixir_img, (24, 24))
 card_images = []
 for name in deck:
     path = os.path.join(BASE_DIR, "assets", "cards", f"{name.lower()}_card.png")
@@ -58,6 +61,16 @@ animations = {}
 
 def flip(pos):
     return (WIDTH - pos[0], HEIGHT - pos[1])
+
+
+def draw_unit_animated_flipped(u,dt): # 'targets' wird nicht mehr benötigt!
+    sx, sy = flip((u["x"], u["y"]))
+    anim = get_anim(u)
+    anim.x, anim.y = sx, sy
+    anim.winkel = u.get("winkel", 0) + 180  # gespiegelte Perspektive
+    anim.update(dt)
+    anim.draw(screen)
+    draw_hp_bar(screen, int(sx), int(sy), u["hp"], u["max_hp"])
 
 def get_anim(u):
     uid = u["id"]
@@ -127,6 +140,21 @@ def draw_bar():
         else:
             label = font_big.render(name[:3], True, (220, 220, 220) if not is_selected else (40, 40, 40))
             screen.blit(label, (cx + slot_w // 2 - label.get_width() // 2, cy + slot_h // 2 - label.get_height() // 2))
+        
+    #elixier anzeige
+    ziel_hoehe = 80  # ← hier anpassen
+    ziel_breite = 150
+    elixir_img_big = pygame.transform.scale(elixir_img, (ziel_breite, ziel_hoehe))
+    ex = bar_x + 350
+    ey = bar_y - 55
+    screen.blit(elixir_img_big, (ex, ey))
+    
+    font_elixir = pygame.font.SysFont(None, 36)
+    elixir = state.get("elixir_p1") if PLAYER_ID == 1 else state.get("elixir_p2")
+    elixir_text = font_elixir.render(f"{int(elixir)}", True, (255, 255, 255))
+    tx = ex + ziel_breite // 2 - elixir_text.get_width() // 2
+    ty = ey + ziel_hoehe // 2 - elixir_text.get_height() // 2
+    screen.blit(elixir_text, (tx, ty+10))
 
 # Network
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -183,24 +211,19 @@ while running:
         text = font.render(f"Spieler {winner} gewinnt!", True, (255, 255, 0))
         screen.blit(text, (WIDTH//2 - text.get_width()//2, HEIGHT//2))
         pygame.display.flip()
-        pygame.time.wait(3000)
+        pygame.time.wait(10000)
         break 
     with state_lock:
         for tower in state.get("red_towers", []):
             tx, ty = flip((tower["x"], tower["y"]))
-            draw_tower(screen, tower, tower_img_red, tx, ty)
+            draw_tower(screen, tower, tower_img_blue, tx, ty)
 
         for tower in state.get("blue_towers", []):
             tx, ty = flip((tower["x"], tower["y"]))
-            draw_tower(screen, tower, tower_img_blue, tx, ty)
+            draw_tower(screen, tower, tower_img_red, tx, ty)
 
         for u in state["troops_p1"] + state["troops_p2"]:
-            sx, sy = flip((u["x"], u["y"]))
-            anim = get_anim(u)
-            anim.x, anim.y = sx, sy
-            anim.update(dt)
-            anim.draw(screen)
-            draw_hp_bar(screen, int(sx), int(sy), u["hp"], u["max_hp"])
+            draw_unit_animated_flipped(u, dt)
 
     draw_bar()
     pygame.display.flip()
