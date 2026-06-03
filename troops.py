@@ -84,31 +84,31 @@ class Unit:
 # ── Truppen ────────────────────────────────────────────────────────────────────
 
 class Pekka(Unit):
-    # hp=1000, dmg=200, speed=2.5, range=50, elexir=6
+    # hp=1000, dmg=200, speed=40, range=50, elexir=6
     # attack_cooldown=45 → ~1.3 Angriffe/Sek
     def __init__(self, x, y, owner):
-        super().__init__(x, y, 1000, 200, 150, 50, 6, owner, attack_cooldown=45)
+        super().__init__(x, y, 1000, 200, 40, 50, 6, owner, attack_cooldown=45)
 
 
 class HogRider(Unit):
-    # hp=500, dmg=100, speed=1, range=3, elexir=3
+    # hp=500, dmg=100, speed=70, range=3, elexir=3
     # attack_cooldown=50 → 1.2 Angriffe/Sek
     def __init__(self, x, y, owner):
-        super().__init__(x, y, 500, 100, 60, 3, 3, owner, attack_cooldown=50)
+        super().__init__(x, y, 500, 70, 60, 3, 3, owner, attack_cooldown=50)
 
 
 class Ritter(Unit):
-    # hp=600, dmg=120, speed=0.8, range=2, elexir=4
+    # hp=600, dmg=120, speed=48, range=2, elexir=4
     # attack_cooldown=55 → ~1.1 Angriffe/Sek
     def __init__(self, x, y, owner):
         super().__init__(x, y, 600, 120, 48, 2, 4, owner, attack_cooldown=55)
 
 class Drache(Unit):
-    # hp=800, dmg=150, speed=3.5, range=120, elexir=4
+    # hp=800, dmg=150, speed=60, range=120, elexir=4
     # Fliegende Einheit — großer Reichweite (Fernkämpfer)
     # attack_cooldown=40 → ~1.5 Angriffe/Sek
     def __init__(self, x, y, owner, base_path=None):
-        super().__init__(x, y, 800, 150, 3.5, 120, 4, owner, attack_cooldown=40)
+        super().__init__(x, y, 800, 150, 60, 120, 4, owner, attack_cooldown=40)
 # ── Türme ─────────────────────────────────────────────────────────────────────
 
 class Tower(Unit):
