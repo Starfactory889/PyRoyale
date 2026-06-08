@@ -11,9 +11,11 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Clash Mini – Spieler 2")
 clock = pygame.time.Clock()
 
-game_map = GameMap(os.path.join(BASE_DIR, "assets", "map.png"), (WIDTH, HEIGHT))
-
 PLAYER_ID = 2
+
+game_map = GameMap(os.path.join(BASE_DIR, "assets", "map.png"), (WIDTH, HEIGHT), PLAYER_ID)
+
+
 
 state = {"troops_p1": [], "troops_p2": [],
          "blue_towers": [], "red_towers": [],
