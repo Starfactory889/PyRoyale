@@ -14,10 +14,10 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Clash Mini Spieler 1")
 clock = pygame.time.Clock()
 
+PLAYER_ID = 1  # ← 1 oder 2 je nach Client
 
 
-game_map = GameMap(os.path.join(BASE_DIR, "assets", "map.png"), (WIDTH, HEIGHT),PLAYER_ID)
-
+game_map = GameMap(os.path.join(BASE_DIR, "assets", "map.png"), (WIDTH, HEIGHT), PLAYER_ID)
 
 
 

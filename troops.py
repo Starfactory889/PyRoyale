@@ -92,7 +92,7 @@ class Pekka(Unit):
 
 
 class HogRider(Unit):
-    # hp=500, dmg=100, speed=1, range=3, elexir=3
+    # hp=500, dmg=100, speed=70, range=3, elexir=3
     # attack_cooldown=50 → 1.2 Angriffe/Sek
     def __init__(self, x, y, owner):
         super().__init__(x, y, 600, 110,70, 15, 4, owner, attack_cooldown=45)
