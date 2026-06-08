@@ -1,17 +1,17 @@
 import pygame
 
 class GameMap:
-    def __init__(self, path, size):
+    def __init__(self, path, size,playerid):
         self.image = pygame.image.load(path)
         self.image = pygame.transform.scale(self.image, size)
 
         self.allowed_areas = [
-            pygame.Rect(140, 100, 380, 450)
+            pygame.Rect(140, 100, 380, 540)
             
         ]
 
         self.blocked_areas = [
-            #pygame.Rect(200, 150, 80, 120),
+            #pygame.Rect(140, 150, 380, 120)
             
         ]
 

@@ -3,6 +3,7 @@ from map import GameMap
 from entity_animation import AnimatedEntity
 
 
+PLAYER_ID = 1  # ← 1 oder 2 je nach Client
 pygame.init()
 
 BASE_DIR = os.path.dirname(__file__)
@@ -10,15 +11,15 @@ WIDTH, HEIGHT = 640, 673
 
 state_lock = threading.Lock()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Clash Mini – Spieler 1")
+pygame.display.set_caption("Clash Mini Spieler 1")
 clock = pygame.time.Clock()
 
 
 
-game_map = GameMap(os.path.join(BASE_DIR, "assets", "map.png"), (WIDTH, HEIGHT))
+game_map = GameMap(os.path.join(BASE_DIR, "assets", "map.png"), (WIDTH, HEIGHT),PLAYER_ID)
 
 
-PLAYER_ID = 1  # ← 1 oder 2 je nach Client
+
 
 # Spielzustand — nur Dicts, keine Klassen
 state = {"troops_p1": [], "troops_p2": [],
