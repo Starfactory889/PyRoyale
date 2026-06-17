@@ -7,7 +7,7 @@ pygame.init()
 BASE_DIR = os.path.dirname(__file__)
 WIDTH, HEIGHT = 640, 673
 PLAYER_ID = 2# ← 1 oder 2 je nach Client 
-
+ip_adresse = "127.0.0.1"
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Clash Mini Spieler 2")
 clock = pygame.time.Clock()
@@ -169,7 +169,7 @@ def draw_bar():
 
 # Network
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.connect(("127.0.0.1", 50000))
+s.connect((ip_adresse, 50000))
 
 def recv():
     puffer = ""

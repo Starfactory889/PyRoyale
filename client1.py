@@ -4,6 +4,7 @@ from entity_animation import AnimatedEntity
 
 
 PLAYER_ID = 1  # ← 1 oder 2 je nach Client
+ip_adresse = "127.0.0.1"
 pygame.init()
 
 BASE_DIR = os.path.dirname(__file__)
@@ -173,7 +174,7 @@ def draw_bar():
     
 # Network
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.connect(("127.0.0.1", 50000))
+s.connect((ip_adresse, 50000))
 
 def recv():
     puffer = "" 
