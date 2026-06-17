@@ -3,21 +3,19 @@ from map import GameMap
 from entity_animation import AnimatedEntity
 
 
+PLAYER_ID = 1  # ← 1 oder 2 je nach Client
 pygame.init()
 
 BASE_DIR = os.path.dirname(__file__)
 WIDTH, HEIGHT = 640, 673
 
-state_lock = threading.Lock()
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Clash Mini – Spieler 1")
-clock = pygame.time.Clock()
+state_lock = threading.Lock() #damit kein Deadlock ensteht
+screen = pygame.display.set_mode((WIDTH, HEIGHT)) # Screen größe
+pygame.display.set_caption("Clash Mini Spieler 1") #Screen Name
+clock = pygame.time.Clock() 
 
-PLAYER_ID = 1  # ← 1 oder 2 je nach Client
-
-
-game_map = GameMap(os.path.join(BASE_DIR, "assets", "map.png"), (WIDTH, HEIGHT), PLAYER_ID)
-
+game_map = GameMap(os.path.join(BASE_DIR, "assets", "map.png"), (WIDTH, HEIGHT), PLAYER_ID) #
+selected_card = 0
 
 
 # Spielzustand — nur Dicts, keine Klassen
@@ -28,7 +26,7 @@ state = {"troops_p1": [], "troops_p2": [],
 
 deck = ["Pekka", "Ritter", "HogRider", "Drache"]
 #               ↑ Index 1 = Taste 2
-selected_card = 0
+
 
 ANIM_MAP = {
     "Pekka":    ("pekka",   "pekka_m",   "pekka_s"),
@@ -49,14 +47,6 @@ win_images = {
            (WIDTH, HEIGHT)),
 }
 
-win_images = {
-    1: pygame.transform.scale(
-           pygame.image.load(os.path.join(BASE_DIR, "assets", "spieler1_win.png")),
-           (WIDTH, HEIGHT)),
-    2: pygame.transform.scale(
-           pygame.image.load(os.path.join(BASE_DIR, "assets", "spieler2_win.png")),
-           (WIDTH, HEIGHT)),
-}
 
 # Elixir Bild laden:
 elixir_img = pygame.image.load(os.path.join(BASE_DIR, "assets", "elixir_drop.png"))
@@ -84,16 +74,14 @@ tower_img_red       = load_tower_img("turm_rot_1")
 tower_img_blue_dead = load_tower_img("turm_blau_2")
 tower_img_red_dead  = load_tower_img("turm_rot_2")
 
-animations = {}
-
 animations = {}  # id → AnimatedEntity
 
-
-def draw_unit_animated(unit,dt): # 'targets' wird nicht mehr benötigt!
+#animieren
+def draw_unit_animated(unit,dt): 
     anim = get_anim(unit)
     anim.x = int(unit["x"])
     anim.y = int(unit["y"])
-    # Wir nehmen direkt den Winkel, den der Server berechnet hat
+    # Winkel welcher der Server berechnet hat
     anim.winkel = unit.get("winkel", 0) 
     anim.update(dt)
     anim.draw(screen)
@@ -131,7 +119,7 @@ def draw_tower(screen, tower, img, img_dead, cx, cy):
     size = 48
     use_img = img_dead if tower["hp"] <= 0 else img
     if use_img:
-        screen.blit(use_img, (cx - size // 2, cy - size // 2))
+        screen.blit(use_img, (cx - size // 2, cy - size // 2)) # damit sie mittig plaziert sind
     else:
         color = (50, 100, 255) if tower.get("owner", 0) == 0 else (255, 60, 60)
         pygame.draw.rect(screen, color, (cx - 16, cy - 16, 32, 32), border_radius=4)
@@ -152,23 +140,24 @@ def draw_bar():
     font = pygame.font.SysFont(None, 22)
     font_big = pygame.font.SysFont(None, 26)
 
+#anreihung Kartenslots
     for i, name in enumerate(deck):
-        cx = bar_x + gap + i * (slot_w + gap)
+        cx = bar_x + gap + i * (slot_w + gap)# damit alle 5 kraten den gelichen Abstand haben
         cy = bar_y + 25
         is_selected = (i == selected_card)
 
         
         if card_images[i]:
             if is_selected:
-                screen.blit(card_images[i], (cx-10, cy - 13))
+                screen.blit(card_images[i], (cx-10, cy - 13))# ausgewähle karte etwas nach oben verschieben
             else:
-                screen.blit(card_images[i], (cx-10, cy))
+                screen.blit(card_images[i], (cx-10, cy)) #
         else:
             label = font_big.render(name[:3], True, (220, 220, 220) if not is_selected else (40, 40, 40))
             screen.blit(label, (cx + slot_w // 2 - label.get_width() // 2, cy + slot_h // 2 - label.get_height() // 2))
     
     #Elixier anzeige        
-    ziel_hoehe = 80  # ← hier anpassen
+    ziel_hoehe = 80  
     ziel_breite = 150
     elixir_img_big = pygame.transform.scale(elixir_img, (ziel_breite, ziel_hoehe))
     ex = bar_x + 350
@@ -187,19 +176,18 @@ s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect(("127.0.0.1", 50000))
 
 def recv():
-    puffer = ""
+    puffer = "" 
     while True:
         try:
-            data = s.recv(4096).decode()
+            data = s.recv(4096).decode() #daten bekommen
             if not data:
-                break
-            puffer += data
-            while "\n" in puffer:
-                msg, puffer = puffer.split("\n", 1)
-            
-                if msg:
+                break # fall nichts ankommt
+            puffer += data # im puffer werden die daten geladen 
+            while "\n" in puffer: # Der Puffer wird abgearbeitet ein datensatz endet immer mit /n
+                msg, puffer = puffer.split("\n", 1) # teile nei \n 1 mal auf
+                if msg:#msg = daten
                     parsed = json.loads(msg)
-                    with state_lock:
+                    with state_lock: # um deadlock zu verhindern
                         state.update(parsed)
         except Exception:
             break
@@ -209,11 +197,11 @@ def recv():
         state["troops_p2"].clear()
     animations.clear()
 
-threading.Thread(target=recv, daemon=True).start()
+threading.Thread(target=recv, daemon=True).start() # threat starten
 
 running = True
 while running:
-    dt = clock.tick(60) / 1000.0
+    dt = clock.tick(60) / 1000.0 #animation clock tick soll nicht derselbe sein wie der game clock tick
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -230,7 +218,7 @@ while running:
 
     game_map.draw(screen)
     
-    print(state["elixir_p1"])
+
     
     with state_lock:
         winner = state.get("winner")

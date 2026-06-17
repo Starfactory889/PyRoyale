@@ -6,15 +6,14 @@ pygame.init()
 
 BASE_DIR = os.path.dirname(__file__)
 WIDTH, HEIGHT = 640, 673
+PLAYER_ID = 2# ← 1 oder 2 je nach Client 
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Clash Mini – Spieler 2")
+pygame.display.set_caption("Clash Mini Spieler 2")
 clock = pygame.time.Clock()
 
-PLAYER_ID = 2
-
 game_map = GameMap(os.path.join(BASE_DIR, "assets", "map.png"), (WIDTH, HEIGHT), PLAYER_ID)
-
+selected_card = 0
 
 
 state = {"troops_p1": [], "troops_p2": [],
@@ -26,7 +25,6 @@ state_lock = threading.Lock()
 
 deck = ["Pekka", "Ritter", "HogRider", "Drache"]
 #               ↑ Index 1 = Taste 2
-selected_card = 0
 
 ANIM_MAP = {
     "Pekka":    ("pekka",   "pekka_m",   "pekka_s"),
@@ -37,15 +35,6 @@ ANIM_MAP = {
 
 slot_img = pygame.image.load(os.path.join(BASE_DIR, "assets", "Kartenslots.png"))
 slot_img = pygame.transform.scale(slot_img, (320, 170))
-
-win_images = {
-    1: pygame.transform.scale(
-           pygame.image.load(os.path.join(BASE_DIR, "assets", "spieler1_win.png")),
-           (WIDTH, HEIGHT)),
-    2: pygame.transform.scale(
-           pygame.image.load(os.path.join(BASE_DIR, "assets", "spieler2_win.png")),
-           (WIDTH, HEIGHT)),
-}
 
 win_images = {
     1: pygame.transform.scale(
@@ -82,13 +71,13 @@ tower_img_red       = load_tower_img("turm_rot_1")
 tower_img_blue_dead = load_tower_img("turm_blau_2")
 tower_img_red_dead  = load_tower_img("turm_rot_2")
 
-animations = {}
+animations = {} #id → AnimatedEntity
 
-def flip(pos):
+def flip(pos): # damit am client2 die koordinaten gespigelt sind
     return (WIDTH - pos[0], HEIGHT - pos[1])
 
 
-def draw_unit_animated_flipped(u,dt): # 'targets' wird nicht mehr benötigt!
+def draw_unit_animated_flipped(u,dt):
     sx, sy = flip((u["x"], u["y"]))
     anim = get_anim(u)
     anim.x, anim.y = sx, sy
@@ -148,19 +137,15 @@ def draw_bar():
     gap = (320 - 4 * slot_w) // 5
     font = pygame.font.SysFont(None, 22)
     font_big = pygame.font.SysFont(None, 26)
-
+#anreihung Kartenslots
     for i, name in enumerate(deck):
-        cx = bar_x + gap + i * (slot_w + gap)
+        cx = bar_x + gap + i * (slot_w + gap)# damit alle 5 kraten den gelichen Abstand haben
         cy = bar_y + 25
         is_selected = (i == selected_card)
-
-        if is_selected:
-            screen.blit(card_images[i], (cx, cy - 10))  # ← 10px nach oben, Zahl anpassen
-        else:
-            screen.blit(card_images[i], (cx, cy))
+            
         if card_images[i]:
             if is_selected:
-                screen.blit(card_images[i], (cx, cy - 10))
+                screen.blit(card_images[i], (cx, cy - 10))# ausgewähle karte etwas nach oben verschieben
             else:
                 screen.blit(card_images[i], (cx, cy))
         else:
@@ -168,7 +153,7 @@ def draw_bar():
             screen.blit(label, (cx + slot_w // 2 - label.get_width() // 2, cy + slot_h // 2 - label.get_height() // 2))
         
     #elixier anzeige
-    ziel_hoehe = 80  # ← hier anpassen
+    ziel_hoehe = 80  
     ziel_breite = 150
     elixir_img_big = pygame.transform.scale(elixir_img, (ziel_breite, ziel_hoehe))
     ex = bar_x + 350
@@ -192,12 +177,14 @@ def recv():
         try:
             data = s.recv(4096).decode()
             if not data:
-                break
-            puffer += data
-            while "\n" in puffer:
-                msg, puffer = puffer.split("\n", 1)
-                with state_lock:
-                    state.update(json.loads(msg))
+                break# fall nichts ankommt
+            puffer += data# im puffer werden die daten geladen 
+            while "\n" in puffer:# Der Puffer wird abgearbeitet ein datensatz endet immer mit /n
+                msg, puffer = puffer.split("\n", 1)# teile nei \n 1 mal auf
+            if msg:#msg = daten
+                    parsed = json.loads(msg)
+                    with state_lock: # um deadlock zu verhindern
+                        state.update(parsed)
         except Exception:
             break
     # Verbindung weg → alles leeren
@@ -210,7 +197,7 @@ threading.Thread(target=recv, daemon=True).start()
 
 running = True
 while running:
-    dt = clock.tick(60) / 1000.0
+    dt = clock.tick(60) / 1000.0 #animation clock tick soll nicht derselbe sein wie der game clock tick
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -226,7 +213,7 @@ while running:
 
     game_map.draw(screen)
 
-    print(state["elixir_p2"])
+
 
     
     with state_lock:

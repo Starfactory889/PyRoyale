@@ -6,7 +6,7 @@ class GameMap:
         self.image = pygame.transform.scale(self.image, size)
 
         self.allowed_areas = [
-            pygame.Rect(140, 100, 380, 450)
+            pygame.Rect(140, 100, 380, 540)
             
         ]
 

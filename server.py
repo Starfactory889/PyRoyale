@@ -20,7 +20,6 @@ ELIXIR_COSTS = {
 }
 
 troops_p1 = []   # Spieler 1 (Blau)
-troops_p2 = []   # Spieler 2 (Rot)
 winner  =None
 
 # server.py
@@ -88,17 +87,21 @@ def game_loop():
             elixir_p1 = min(MAX_ELIXIR, elixir_p1 + ELIXIR_PER_SECOND * dt)
             elixir_p2 = min(MAX_ELIXIR, elixir_p2 + ELIXIR_PER_SECOND * dt)
 
+            #stellt nur truppen dar die noch am Leben sind
             troops_p1 = [troop for troop in troops_p1 if troop.hp > 0]
             troops_p2 = [troop for troop in troops_p2 if troop.hp > 0]
             
+            # ziele sind die truppen + die türme welche noch am Leben sind
             red_targets  = [troop for troop in red_towers  if troop.hp > 0] + troops_p2
             blue_targets = [troop for troop in blue_towers if troop.hp > 0] + troops_p1
  
+            #berechnet für alle truppen den Nächsten schritt
             for troop in troops_p1:
                 troop.next_Step(red_targets,dt)
             for troop in troops_p2:
                 troop.next_Step(blue_targets,dt)
 
+            #berechnet für alle türme die nächsten schritte
             for tower in blue_towers:
                 tower.next_Step(troops_p2, dt)
             for tower in red_towers:
@@ -106,11 +109,12 @@ def game_loop():
             
             if winner is None:
                 winner = check_winner()
-        time.sleep(1/60)
+    
+        time.sleep(1/60) # wie oft berechnung durchgeführt werden
         
 def check_winner():
     for tower in blue_towers:
-        if isinstance(tower, t.MainTower) and tower.hp <= 0:
+        if isinstance(tower, t.MainTower) and tower.hp <= 0:# isinstance schaut ob (tower) ein Objekt von Maintower ist
             return 2  # Rot gewinnt
         
     for tower in red_towers:
