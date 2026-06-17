@@ -138,12 +138,14 @@ def handle_client(conn, player_id):
                     if msg:
                         cmd = json.loads(msg)
                         if cmd["action"] == "spawn":
+                            
+                            #klass ist dann z.B t.Ritter .get greift auf Wert des Schlüssel (String) cmd["type"] zu
                             klass = KLASSEN.get(cmd["type"])
                             if klass is None:
                                 continue
                             unit = klass(cmd["x"], cmd["y"], player_id)
                             with state_lock:
-                                klasse = KLASSEN[cmd["type"]]
+                               # klasse = KLASSEN[cmd["type"]]
 
                                 # falls er die klasse nicht kennt kommt 999 zurück dadurch wird spawn unmöglich
                                 cost = ELIXIR_COSTS.get(cmd["type"], 999)
@@ -151,23 +153,11 @@ def handle_client(conn, player_id):
                                 # Elixir prüfen und abziehen
                                 if player_id == 1:
                                     if elixir_p1 > cost:
-                                        if cmd["type"] == "Ritter":
-                                            unit = t.Ritter(cmd["x"], cmd["y"], player_id)
-                                        elif cmd["type"] == "HogRider":
-                                            unit = t.HogRider(cmd["x"], cmd["y"], player_id)
-                                        elif cmd["type"] == "Pekka":
-                                            unit = t.Pekka(cmd["x"], cmd["y"], player_id)
                                             
                                         troops_p1.append(unit)
                                         elixir_p1 -= cost
                                 else:
                                     if elixir_p2 > cost:
-                                        if cmd["type"] == "Ritter":
-                                            unit = t.Ritter(cmd["x"], cmd["y"], player_id)
-                                        elif cmd["type"] == "HogRider":
-                                            unit = t.HogRider(cmd["x"], cmd["y"], player_id)
-                                        elif cmd["type"] == "Pekka":
-                                            unit = t.Pekka(cmd["x"], cmd["y"], player_id)
                                             
                                         troops_p2.append(unit)
                                         elixir_p2 -= cost
